@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}
+    Authentication server simulator
+{% endblock %}
+{% block body %}
+    <div class="container">
+        <h1>Authentication server simulator</h1>
+        <form action="" method="post">
+            <input type="text" name="username" placeholder="Username" class="input-field">
+            <input type="password" name="password" placeholder="Password" class="input-field">
+            <button type="submit" formaction="{{url_for('login')}}" class="button button-login">Login</button>
+            <button type="submit" formaction="{{url_for('register')}}" class="button button-register">Register</button>
+        </form>
+        <a href="{{url_for('config')}}" class="button button-config">Set configuration</a>
+    </div>
+{% endblock %}
