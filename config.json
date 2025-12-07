@@ -1,0 +1,51 @@
+{
+    "options": [
+        {
+            "name": "argon2",
+            "label": "argon2",
+            "status": "selected"
+        },
+        {
+            "name": "bcrypt",
+            "label": "bcrypt",
+            "status": ""
+        },
+        {
+            "name": "sha256",
+            "label": "SHA256/salt",
+            "status": ""
+        },
+        {
+            "name": "md5",
+            "label": "MD5",
+            "status": ""
+        }
+    ],
+    "checkboxs": [
+        {
+            "name": "pepper",
+            "label": "Pepper",
+            "status": ""
+        },
+        {
+            "name": "ratelimit",
+            "label": "Rate-Limiting",
+            "status": ""
+        },
+        {
+            "name": "userlock",
+            "label": "User-Locking",
+            "status": ""
+        },
+        {
+            "name": "captcha",
+            "label": "CAPTCHA",
+            "status": ""
+        },
+        {
+            "name": "totp",
+            "label": "Time-based One-Time Password",
+            "status": ""
+        }
+    ]
+}

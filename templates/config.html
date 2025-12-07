@@ -3,6 +3,20 @@
     Configuration
 {% endblock %}
 {% block body %}
-    <a href="/">Save</a>
-    <a href="/">Back</a>
+    <div class="container">
+        <form action="/" method="post">
+            <label for="hashfunc">Password-hashing function:</label>
+            <select name="hashfunc" id="hashfunc">
+                {% for opt in form_config.options %}
+                    <option value="{{ opt.name }}" {{ opt.status }}>{{ opt.label }}</option>
+                {% endfor %}
+            </select><br>
+            {% for cb in form_config.checkboxs %}
+                <input type="checkbox" name="{{ cb.name }}" {{ cb.status }}>
+                <label for="{{ cb.name }}">{{ cb.label }}</label><br>
+            {% endfor %}
+            <input type="submit" value="Save" class="button button-config">
+        </form>
+
+    </div>
 {% endblock %}
