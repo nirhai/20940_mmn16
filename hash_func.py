@@ -51,13 +51,13 @@ def generate_hash(func, password):
         case "md5":
             return _gen_md5(password)
         
-def check_hash(func, hash_list, password):
+def check_hash(func, hash, password):
     match func:
         case "argon2":
-            return _chk_argon2(hash_list[0], password)
+            return _chk_argon2(hash, password)
         case "bcrypt":
-            return _chk_bcrypt(hash_list[1], password)
+            return _chk_bcrypt(hash, password)
         case "sha256":
-            return _chk_sha256(hash_list[2], password)
+            return _chk_sha256(hash, password)
         case "md5":
-            return _chk_md5(hash_list[3], password)
+            return _chk_md5(hash, password)

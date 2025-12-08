@@ -3,12 +3,12 @@
         {
             "name": "argon2",
             "label": "argon2",
-            "status": "selected"
+            "status": ""
         },
         {
             "name": "bcrypt",
             "label": "bcrypt",
-            "status": ""
+            "status": "selected"
         },
         {
             "name": "sha256",
@@ -30,7 +30,7 @@
         {
             "name": "ratelimit",
             "label": "Rate-Limiting",
-            "status": ""
+            "status": "checked"
         },
         {
             "name": "userlock",
