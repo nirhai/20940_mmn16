@@ -1,5 +1,5 @@
 {
-    "options": [
+    "hash_functions": [
         {
             "name": "argon2",
             "label": "argon2",
@@ -8,12 +8,12 @@
         {
             "name": "bcrypt",
             "label": "bcrypt",
-            "status": "selected"
+            "status": ""
         },
         {
             "name": "sha256",
             "label": "SHA256/salt",
-            "status": ""
+            "status": "selected"
         },
         {
             "name": "md5",
@@ -21,31 +21,36 @@
             "status": ""
         }
     ],
-    "checkboxs": [
+    "security_modules": [
         {
             "name": "pepper",
             "label": "Pepper",
-            "status": ""
+            "status": "",
+            "value": "shshap3pp3er"
         },
         {
             "name": "ratelimit",
             "label": "Rate-Limiting",
-            "status": "checked"
+            "status": "checked",
+            "value": "2"
         },
         {
             "name": "userlock",
             "label": "User-Locking",
-            "status": ""
+            "status": "",
+            "value": "4"
         },
         {
             "name": "captcha",
             "label": "CAPTCHA",
-            "status": ""
+            "status": "",
+            "value": ""
         },
         {
             "name": "totp",
             "label": "Time-based One-Time Password",
-            "status": ""
+            "status": "",
+            "value": ""
         }
     ]
 }

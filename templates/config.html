@@ -1,22 +1,20 @@
 {% extends "base.html" %}
-{% block title %}
-    Configuration
-{% endblock %}
-{% block body %}
-    <div class="container">
-        <form action="/" method="post">
-            <label for="hashfunc">Password-hashing function:</label>
-            <select name="hashfunc" id="hashfunc">
-                {% for opt in form_config.options %}
-                    <option value="{{ opt.name }}" {{ opt.status }}>{{ opt.label }}</option>
-                {% endfor %}
-            </select><br>
-            {% for cb in form_config.checkboxs %}
-                <input type="checkbox" name="{{ cb.name }}" {{ cb.status }}>
-                <label for="{{ cb.name }}">{{ cb.label }}</label><br>
+{% block container %}
+    <form action="/" method="post">
+        <label for="hashfunc">Password-hashing function:</label>
+        <select name="hashfunc" id="hashfunc" class="input-field">
+            {% for hf in form_config.hash_functions %}
+                <option value="{{ hf.name }}" {{ hf.status }}>{{ hf.label }}</option>
             {% endfor %}
-            <input type="submit" value="Save" class="button button-config">
-        </form>
-
-    </div>
+        </select><br>
+        {% for sm in form_config.security_modules %}
+            <input type="checkbox" name="{{ sm.name }}" {{ sm.status }}>
+            <label for="{{ sm.name }}">{{ sm.label }}</label>
+            {% if sm.value %}
+                <input type="text" name="{{ sm.name }}_val" value="{{ sm.value }}" maxlength="32" required class="input-field">
+            {% endif %}
+            <br>
+        {% endfor %}
+        <input type="submit" value="Save & Reset" class="button button-config">
+    </form>
 {% endblock %}

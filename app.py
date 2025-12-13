@@ -1,62 +1,95 @@
 from flask import Flask, render_template, request
 import json
-from database import create_table, insert_user, check_user
+from database import Database
 
-config_file = 'config.json'
-users_file = 'users.json'
+CONFIG_FILE = 'config.json'
+USERS_FILE = 'users.json'
+DB_FILE = 'users.db'
 
-def _gen_config_data(hashfunc, pepper, ratelimit, userlock, captcha, totp):
+class SecModule:
+    def __init__(self, status, value=None):
+        self.status = status
+        self.value = value
+
+class Config:
+    def __init__(self, hashfunc, pepper, ratelimit, userlock, captcha, totp):
+        self.hashfunc = hashfunc
+        self.pepper = pepper
+        self.ratelimit = ratelimit
+        self.userlock = userlock
+        self.captcha = captcha
+        self.totp = totp
+
+def _gen_config_data(config_obj):
     data = {
-        "options" : [
-            {"name":"argon2", "label":"argon2", "status":"selected" if hashfunc=='argon2' else ""},
-            {"name":"bcrypt", "label":"bcrypt", "status":"selected" if hashfunc=='bcrypt' else ""},
-            {"name":"sha256", "label":"SHA256/salt", "status":"selected" if hashfunc=='sha256' else ""},
-            {"name":"md5", "label":"MD5", "status":"selected" if hashfunc=='md5' else ""}
+        "hash_functions" : [
+            {"name":"argon2", "label":"argon2", "status":"selected" if config_obj.hashfunc=='argon2' else ""},
+            {"name":"bcrypt", "label":"bcrypt", "status":"selected" if config_obj.hashfunc=='bcrypt' else ""},
+            {"name":"sha256", "label":"SHA256/salt", "status":"selected" if config_obj.hashfunc=='sha256' else ""},
+            {"name":"md5", "label":"MD5", "status":"selected" if config_obj.hashfunc=='md5' else ""}
         ],
-        "checkboxs" : [
-            {"name":"pepper", "label":"Pepper", "status":"checked" if pepper else ""},
-            {"name":"ratelimit", "label":"Rate-Limiting", "status":"checked" if ratelimit else ""},
-            {"name":"userlock", "label":"User-Locking", "status":"checked" if userlock else ""},
-            {"name":"captcha", "label":"CAPTCHA", "status":"checked" if captcha else ""},
-            {"name":"totp", "label":"Time-based One-Time Password", "status":"checked" if totp else ""}
+        "security_modules" : [
+            {"name":"pepper", "label":"Pepper", "status":"checked" if config_obj.pepper.status else "", "value": config_obj.pepper.value},
+            {"name":"ratelimit", "label":"Rate-Limiting", "status":"checked" if config_obj.ratelimit.status else "", "value": config_obj.ratelimit.value},
+            {"name":"userlock", "label":"User-Locking", "status":"checked" if config_obj.userlock.status else "", "value": config_obj.userlock.value},
+            {"name":"captcha", "label":"CAPTCHA", "status":"checked" if config_obj.captcha.status else "", "value": ""},
+            {"name":"totp", "label":"Time-based One-Time Password", "status":"checked" if config_obj.totp.status else "", "value": ""}
         ]
     }
     return data
 
-def _get_config_hashfunc():
-    with open(config_file, 'r') as file:
+def _get_config_hashfunc(config):
+    for hf in config['hash_functions']:
+        if hf['status'] == "selected":
+            return hf['name']
+        
+def _get_config_secmodule_val(config, secmodule):
+    for sm in config['security_modules']:
+        if sm['name'] == secmodule:
+            return sm['value'] if sm['status'] == "checked" else None
+        
+def _get_config(param):
+    with open(CONFIG_FILE, 'r') as file:
         config = json.load(file)
-    for option in config['options']:
-        if option['status'] == "selected":
-            return option['name']
+    match param:
+        case 'hashfunc':
+            return _get_config_hashfunc(config)
+        case 'pepper' | 'ratelimit' | 'userlock' | 'captcha' | 'totp':
+            return _get_config_secmodule_val(config, param)
+        
+def _build_db(db_filename, users_filename):
+    db = Database(db_filename, _get_config('pepper'))
+    with open(users_filename, 'r') as file:
+        users = json.load(file)
+    for user in users:
+        db.insert_user(user['username'], user['password'])
+    return db
 
 app = Flask(__name__)
-
-#build database
-with open(users_file, 'r') as file:
-    users = json.load(file)
-create_table(users)
 
 # routs
 @app.route("/", methods=["POST","GET"])
 def index():
     if request.method == "POST":
         hashfunc = request.form.get('hashfunc')
-        pepper = request.form.get('pepper')
-        ratelimit = request.form.get('ratelimit')
-        userlock = request.form.get('userlock')
-        captcha = request.form.get('captcha')
-        totp = request.form.get('totp')
-        config_data = _gen_config_data(hashfunc, pepper, ratelimit, userlock, captcha, totp)
-        with open(config_file, 'w') as file:
+        pepper = SecModule(request.form.get('pepper'), request.form.get('pepper_val'))
+        ratelimit = SecModule(request.form.get('ratelimit'), request.form.get('ratelimit_val'))
+        userlock = SecModule(request.form.get('userlock'), request.form.get('userlock_val'))
+        captcha = SecModule(request.form.get('captcha'))
+        totp = SecModule(request.form.get('totp'))
+        config_obj = Config(hashfunc, pepper, ratelimit, userlock, captcha, totp)
+        config_data = _gen_config_data(config_obj)
+        with open(CONFIG_FILE, 'w') as file:
             json.dump(config_data, file, indent=4)
+        global database
+        database = _build_db(DB_FILE, USERS_FILE)
     return render_template("index.html")
 
 @app.route("/register", methods=["POST"])
 def register():
     username = request.form['username']
     password = request.form['password']
-    if insert_user(username, password):
+    if database.insert_user(username, password):
         return "registered"
     return "user exists"
 
@@ -64,10 +97,18 @@ def register():
 def login():
     username = request.form['username']
     password = request.form['password']
-    hashfunc = _get_config_hashfunc()
-    if check_user(username, password, hashfunc):
-        return "success"
-    return "wrong user or password"
+    hashfunc = _get_config('hashfunc')
+    max_attempts = _get_config('userlock')
+    attempts_per_minute = _get_config('ratelimit')
+    max_attempts = int(max_attempts) if max_attempts is not None else None
+    attempts_per_minute = int(attempts_per_minute) if attempts_per_minute is not None else None
+    match database.check_user(username, password, hashfunc, max_attempts, attempts_per_minute):
+        case None:
+            return "locked"
+        case False:
+            return "wrong user or password"
+        case True:
+            return "success"
 
 @app.route("/login_totp")
 def login_totp():
@@ -75,10 +116,11 @@ def login_totp():
 
 @app.route("/config")
 def config():
-    with open(config_file, 'r') as file:
+    with open(CONFIG_FILE, 'r') as file:
         form_config = json.load(file)
     return render_template("config.html", form_config=form_config)
 
 
 if __name__ in "__main__":
+    database = _build_db(DB_FILE, USERS_FILE)
     app.run(debug=True)
