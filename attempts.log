@@ -1,0 +1,1 @@
+group_seed,username,hash_mode,pepper,ratelimit,userlock,captcha,totp,result,latency_ms,timestamp

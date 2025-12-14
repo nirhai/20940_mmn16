@@ -30,13 +30,6 @@ class Database:
         connect_obj = sqlite3.connect(self.filename)
         cursor_obj = connect_obj.cursor()
         password_with_pepper = password + ("" if self.pepper is None else self.pepper)
-        #insert_query = f"""INSERT INTO users VALUES ('{username}',
-        #                                             '{generate_hash("argon2", password_with_pepper)}',
-        #                                             '{generate_hash("bcrypt", password_with_pepper)}',
-        #                                             '{generate_hash("sha256", password_with_pepper)}',
-        #                                             '{generate_hash("md5", password_with_pepper)}',
-        #                                             0, 0, NULL
-        #                )"""
         insert_query = """INSERT INTO users (username, argon2_hash, bcrypt_hash, sha256_hash, md5_hash, failed_attempts, failed_attempts_per_minute, first_attempt_time)
                           VALUES (?, ?, ?, ?, ?, 0, 0, NULL)"""
         user_data = (username, generate_hash("argon2", password_with_pepper), generate_hash("bcrypt", password_with_pepper),
@@ -55,7 +48,7 @@ class Database:
         connect_obj = sqlite3.connect(self.filename)
         cursor_obj = connect_obj.cursor()
         select_query = "SELECT * FROM users WHERE username = ?"
-        cursor_obj.execute(select_query, (username))
+        cursor_obj.execute(select_query, (username,))
         user = cursor_obj.fetchone()
         result = False
         if user is not None:

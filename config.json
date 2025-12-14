@@ -25,14 +25,14 @@
         {
             "name": "pepper",
             "label": "Pepper",
-            "status": "",
+            "status": "checked",
             "value": "shshap3pp3er"
         },
         {
             "name": "ratelimit",
             "label": "Rate-Limiting",
-            "status": "checked",
-            "value": "2"
+            "status": "",
+            "value": "22"
         },
         {
             "name": "userlock",
@@ -43,8 +43,8 @@
         {
             "name": "captcha",
             "label": "CAPTCHA",
-            "status": "",
-            "value": ""
+            "status": "checked",
+            "value": "10"
         },
         {
             "name": "totp",
