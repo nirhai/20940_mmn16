@@ -1,20 +1,37 @@
 {% extends "base.html" %}
 {% block container %}
-    <form action="/" method="post">
-        <label for="hashfunc">Password-hashing function:</label>
-        <select name="hashfunc" id="hashfunc" class="input-field">
-            {% for hf in form_config.hash_functions %}
-                <option value="{{ hf.name }}" {{ hf.status }}>{{ hf.label }}</option>
-            {% endfor %}
-        </select><br>
+<script>
+    function toggleRequired(sm) {
+        var cb = document.getElementById(sm + "_cb");
+        var tb = document.getElementById(sm + "_tb");
+        tb.required = cb.checked;
+    }
+</script>
+    <form action="{{url_for('save')}}" method="post">
+        <div class="parameter">
+            <label for="hashfunc">
+                Password-hashing function:
+                <select name="hashfunc" id="hashfunc" class="input-field">
+                    {% for hf in form_config.hash_functions %}
+                        <option value="{{ hf.name }}" {{ hf.status }}>{{ hf.label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
         {% for sm in form_config.security_modules %}
-            <input type="checkbox" name="{{ sm.name }}" {{ sm.status }}>
-            <label for="{{ sm.name }}">{{ sm.label }}</label>
-            {% if sm.value %}
-                <input type="text" name="{{ sm.name }}_val" value="{{ sm.value }}" maxlength="32" required class="input-field">
-            {% endif %}
-            <br>
+            <div class="parameter">
+                <label for="{{ sm.name }}">
+                    <input type="checkbox" name="{{ sm.name }}" {{ sm.status }} id="{{ sm.name }}_cb" onchange="toggleRequired('{{ sm.name }}')">
+                    {{ sm.label }}
+                    {% if sm.value is defined %}
+                        <input type="{{ sm.type }}" name="{{ sm.name }}_val" value="{{ sm.value }}" placeholder="{{ sm.info }}" maxlength="32" class="input-field" id="{{ sm.name }}_tb" {% if sm.status %} required {% endif %}>
+                    {% endif %}
+                </label>
+            </div>
         {% endfor %}
-        <input type="submit" value="Save & Reset" class="button button-config">
+        <div class="buttons">
+            <input type="submit" value="Save & Reset" class="button">
+            <a href="{{url_for('index')}}" class="button">Discard</a>
+        </div>
     </form>
 {% endblock %}

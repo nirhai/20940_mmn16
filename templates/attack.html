@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block container %}
+<form action="{{url_for('attack')}}" method="post">
+    <div class="parameter">
+        <label for="">
+            <input type="radio" name="attack_type" value="test 1">
+            TEST1
+        </label>
+    </div>
+        <div class="parameter">
+        <label for="">
+            <input type="radio" name="attack_type" value="test 2">
+            TEST2
+        </label>
+    </div>
+    <div class="buttons">
+        <input type="submit" value="Start" class="button">
+        <a href="{{url_for('index')}}" class="button">Back</a>
+    </div>
+</form>
+{% endblock %}

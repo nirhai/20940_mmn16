@@ -1,4 +1,8 @@
 body {
+    display: flex;
+    margin: 30px 0;
+    justify-content: center;
+    align-content:center;
     background-color: #7d8491;
     font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
     font-size: 1rem;
@@ -10,16 +14,30 @@ body {
     border-radius: 10px;
     max-width: 400px;
     padding: 30px;
-    justify-content: center;
-    align-items: center;
-    text-align: left;
+    text-align: center;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
+.response {
+    height: 10px;
+    align-items: center;
+}
+
+.buttons {
+    padding-top: 15px;
+}
+
+.parameter {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    text-align: left;
+}
+
 .input-field {
+    box-sizing: border-box;
     width: 100%;
     padding: 10px;
-    margin: 10px 0;
+    margin: 5px 0;
     border: none;
     outline: none;
     border-radius: 10px;
@@ -34,7 +52,8 @@ body {
 
 .button {
     display: block;
-    width: 150px;
+    box-sizing: border-box;
+    width: 100%;
     padding: 10px;
     margin: 10px 0;
     border: none;
@@ -43,25 +62,16 @@ body {
     text-decoration: none;
     text-align: center;
     cursor: pointer;
-    background-color:#bbbe64;
-    color: #ecedd3;
     text-transform: uppercase;
     font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
     font-weight: bold;
-}
-
-.button:hover {
-    background-color: #a9ad48;
-
-}
-
-.button-config {
     background-color:#443850;
     color: #bdb1c8;
 }
 
-.button-config:hover {
+.button:hover {
     background-color: #332a3c;
+
 }
 
 .button-attack {
@@ -71,4 +81,13 @@ body {
 
 .button-attack:hover {
     background-color: #a40f19;
+}
+
+.button-login, .button-register {
+    background-color:#bbbe64;
+    color: #ecedd3;
+}
+
+.button-login:hover, .button-register:hover {
+    background-color:#a9ad48;
 }

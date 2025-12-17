@@ -25,32 +25,41 @@
         {
             "name": "pepper",
             "label": "Pepper",
-            "status": "checked",
-            "value": "shshap3pp3er"
+            "type": "text",
+            "info": "",
+            "status": "",
+            "value": ""
         },
         {
             "name": "ratelimit",
             "label": "Rate-Limiting",
+            "type": "number",
+            "info": "failed login attempts in one minute",
             "status": "",
-            "value": "22"
+            "value": ""
         },
         {
             "name": "userlock",
             "label": "User-Locking",
+            "type": "number",
+            "info": "failed login attempts",
             "status": "",
-            "value": "4"
+            "value": ""
         },
         {
             "name": "captcha",
             "label": "CAPTCHA",
-            "status": "checked",
-            "value": "10"
+            "type": "number",
+            "info": "failed login attempts",
+            "status": "",
+            "value": ""
         },
         {
             "name": "totp",
             "label": "Time-based One-Time Password",
-            "status": "",
-            "value": ""
+            "type": "text",
+            "info": "",
+            "status": ""
         }
     ]
 }
