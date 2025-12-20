@@ -13,11 +13,11 @@ DB_FILE = 'users.db'
 LOG_FILE = 'attempts.log'
 
 def _build_db(db_filename, users_filename):
-    db = Database(db_filename, conf.pepper)
+    db = Database(db_filename, conf.hashfunc, conf.pepper if conf.pepper else None)
     with open(users_filename, 'r') as file:
         users = json.load(file)
     for user in users:
-        db.insert_user(user['username'], user['password'])
+        db.insert_user(user['username'], user['password'], user['totp'])
     return db
 
 def _log_to_csv(filename, data):
@@ -28,16 +28,13 @@ def _log_to_csv(filename, data):
 def _generate_token():
     return secrets.token_urlsafe(10)
 
-def _validate_token(token, max_attempts):
+def _token_is_valid(token, max_attempts):
     global captcha_attempts_count
-    captcha_required = False
-    if captcha_on := max_attempts is not None:
-        if captcha_attempts_count > max_attempts - 1:
-            captcha_required = token != captcha_token
-            if not captcha_required:
-                captcha_attempts_count = 0
-    return captcha_on, captcha_required
-
+    valid = True
+    if captcha_attempts_count > max_attempts - 1:
+        if valid := token == captcha_token:
+            captcha_attempts_count = 0
+    return valid
 
 app = Flask(__name__)
 
@@ -46,22 +43,22 @@ app = Flask(__name__)
 def index():
     if captcha_on := conf.captcha is not None:
          captcha_required = captcha_attempts_count > conf.captcha - 1
-    return render_template("index.html", captcha_required=captcha_on and captcha_required)
+    return render_template("index.html", captcha_required=captcha_on and captcha_required, totp_on=conf.totp is not None)
 
-@app.route("/register", methods=['POST'])
-def register():
+@app.route("/register/<type>", methods=['POST'])
+def register(type):
+    totp_reg = (totp_on := conf.totp is not None) and type == 'totp'
     username = request.form['username']
     password = request.form['password']
     token = request.form['captcha']
-    captcha_on, captcha_required = _validate_token(token, conf.captcha)
     global captcha_token
-    if captcha_required:
+    if (captcha_on := conf.captcha is not None) and (captcha_required := not _token_is_valid(token, conf.captcha)):
         msg = "wrong token"
         captcha_token = _generate_token()
     else:
-        msg = "registered" if database.insert_user(username, password) else "user exists"
+        msg = "registered" if database.insert_user(username, password, totp_reg) else "user exists"
         captcha_token = None
-    return render_template("index.html", response=msg, captcha_required=captcha_on and captcha_required)
+    return render_template("index.html", response=msg, captcha_required=captcha_on and captcha_required, totp_on=totp_on)
 
 @app.route("/login", methods=['POST'])
 def login():
@@ -70,7 +67,9 @@ def login():
     token = request.form['captcha']
     attempts_per_minute, max_attempts, captcha_max_attempts = conf.ratelimit, conf.userlock, conf.captcha
     start_time_ms = int(time.time() * 1000) #for log
-    captcha_on, captcha_required = _validate_token(token, captcha_max_attempts)
+
+    captcha_on = captcha_max_attempts is not None
+    captcha_required = captcha_on and not _token_is_valid(token, captcha_max_attempts)
     global captcha_attempts_count, captcha_token
     if captcha_required:
         msg = "wrong token"
@@ -78,7 +77,7 @@ def login():
         if captcha_on:
             captcha_attempts_count += 1
             captcha_required = captcha_attempts_count > captcha_max_attempts - 1
-        match database.check_user(username, password, conf.hashfunc, max_attempts, attempts_per_minute):
+        match database.check_user(username, password, max_attempts, attempts_per_minute):
             case None:
                 msg = "locked"
             case False:
@@ -92,7 +91,7 @@ def login():
     latency_ms = end_time_ms - start_time_ms #for log
     log_data = [GROUP_SEED, username, conf.hashfunc, conf.pepper, conf.ratelimit, conf.userlock, conf.captcha, conf.totp, msg, latency_ms, end_time_ms]
     _log_to_csv(LOG_FILE, log_data)
-    return render_template("index.html", response=msg, captcha_required=captcha_on and captcha_required)
+    return render_template("index.html", response=msg, captcha_required=captcha_on and captcha_required, totp_on=conf.totp is not None)
         
 @app.route("/admin/get_captcha_token")
 def get_captcha_token():
@@ -116,7 +115,9 @@ def save():
     hashfunc = request.form.get('hashfunc')
     sec_modules = []
     for sec_module in ['pepper', 'ratelimit', 'userlock', 'captcha', 'totp']:
-        val = request.form.get(sec_module + '_val') if request.form.get(sec_module) else None
+        if (val := request.form.get(sec_module)) is not None:
+            if (val := request.form.get(sec_module + '_val')) is None:
+                val = True
         sec_modules.append(val)
     config_obj = Config(hashfunc, sec_modules)
     save_config(CONFIG_FILE, config_obj)

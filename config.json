@@ -3,22 +3,22 @@
         {
             "name": "argon2",
             "label": "argon2",
-            "status": ""
+            "status": false
         },
         {
             "name": "bcrypt",
             "label": "bcrypt",
-            "status": ""
+            "status": false
         },
         {
             "name": "sha256",
             "label": "SHA256/salt",
-            "status": "selected"
+            "status": true
         },
         {
             "name": "md5",
             "label": "MD5",
-            "status": ""
+            "status": false
         }
     ],
     "security_modules": [
@@ -26,40 +26,37 @@
             "name": "pepper",
             "label": "Pepper",
             "type": "text",
-            "info": "",
-            "status": "",
-            "value": ""
+            "status": false,
+            "value": null
         },
         {
             "name": "ratelimit",
             "label": "Rate-Limiting",
             "type": "number",
             "info": "failed login attempts in one minute",
-            "status": "",
-            "value": ""
+            "status": false,
+            "value": null
         },
         {
             "name": "userlock",
             "label": "User-Locking",
             "type": "number",
             "info": "failed login attempts",
-            "status": "",
-            "value": ""
+            "status": false,
+            "value": null
         },
         {
             "name": "captcha",
             "label": "CAPTCHA",
             "type": "number",
             "info": "failed login attempts",
-            "status": "",
-            "value": ""
+            "status": false,
+            "value": null
         },
         {
             "name": "totp",
             "label": "Time-based One-Time Password",
-            "type": "text",
-            "info": "",
-            "status": ""
+            "status": false
         }
     ]
 }

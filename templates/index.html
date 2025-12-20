@@ -3,13 +3,19 @@
     <form method="post">
         <input type="text" name="username" placeholder="Username" maxlength="25" required class="input-field">
         <input type="password" name="password" placeholder="Password" maxlength="20" required class="input-field">
+
         <input type=
             {% if captcha_required %} "text" {% else %} "hidden" {% endif %}
             name="captcha" placeholder="CAPTCHA Token" maxlength="20" required class="input-field">
+
         <p class="response">{% if response is not none %} {{response}} {% endif %}</p>
+        
         <div class="buttons">
             <button type="submit" formaction="{{url_for('login')}}" class="button button-login">Login</button>
-            <button type="submit" formaction="{{url_for('register')}}" class="button button-register">Register</button>
+            <button type="submit" formaction="{{url_for('register', type='void')}}" class="button button-register">Register</button>
+            <div {% if not totp_on %} hidden {% endif %} >
+                <button type="submit" formaction="{{url_for('register', type='totp')}}" class="button button-register">Register with TOTP</button>
+            </div>
             <a href="{{url_for('attack')}}" class="button button-attack">Attack</a>
             <a href="{{url_for('config')}}" class="button">Set configuration</a>
         </div>

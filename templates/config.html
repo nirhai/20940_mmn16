@@ -13,7 +13,9 @@
                 Password-hashing function:
                 <select name="hashfunc" id="hashfunc" class="input-field">
                     {% for hf in form_config.hash_functions %}
-                        <option value="{{ hf.name }}" {{ hf.status }}>{{ hf.label }}</option>
+                        <option value="{{ hf.name }}" {% if hf.status %} selected {% endif %}>
+                            {{ hf.label }}
+                        </option>
                     {% endfor %}
                 </select>
             </label>
@@ -21,10 +23,23 @@
         {% for sm in form_config.security_modules %}
             <div class="parameter">
                 <label for="{{ sm.name }}">
-                    <input type="checkbox" name="{{ sm.name }}" {{ sm.status }} id="{{ sm.name }}_cb" onchange="toggleRequired('{{ sm.name }}')">
+                    <input
+                        type="checkbox"
+                        name="{{ sm.name }}"
+                        id="{{ sm.name }}_cb"
+                        onchange="toggleRequired('{{ sm.name }}')"
+                        {% if sm.status %} checked {% endif %}>
                     {{ sm.label }}
                     {% if sm.value is defined %}
-                        <input type="{{ sm.type }}" name="{{ sm.name }}_val" value="{{ sm.value }}" placeholder="{{ sm.info }}" maxlength="32" class="input-field" id="{{ sm.name }}_tb" {% if sm.status %} required {% endif %}>
+                        <input
+                            type="{{ sm.type }}"
+                            name="{{ sm.name }}_val"
+                            {% if sm.value is not none %} value="{{ sm.value }}" {% endif %}
+                            {% if sm.info is defined %} placeholder="{{ sm.info }}" {% endif %}
+                            maxlength="32"
+                            class="input-field"
+                            id="{{ sm.name }}_tb"
+                            {% if sm.status %} required {% endif %}>
                     {% endif %}
                 </label>
             </div>

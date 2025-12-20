@@ -12,44 +12,47 @@ class Config:
 def _gen_config_data(config_obj):
     data = {
         "hash_functions" : [
-            {"name":"argon2", "label":"argon2", "status":"selected" if config_obj.hashfunc=='argon2' else ""},
-            {"name":"bcrypt", "label":"bcrypt", "status":"selected" if config_obj.hashfunc=='bcrypt' else ""},
-            {"name":"sha256", "label":"SHA256/salt", "status":"selected" if config_obj.hashfunc=='sha256' else ""},
-            {"name":"md5", "label":"MD5", "status":"selected" if config_obj.hashfunc=='md5' else ""}
+            {"name":"argon2", "label":"argon2", "status":config_obj.hashfunc=='argon2'},
+            {"name":"bcrypt", "label":"bcrypt", "status":config_obj.hashfunc=='bcrypt'},
+            {"name":"sha256", "label":"SHA256/salt", "status":config_obj.hashfunc=='sha256'},
+            {"name":"md5", "label":"MD5", "status":config_obj.hashfunc=='md5'}
         ],
         "security_modules" : [
-            {"name":"pepper", "label":"Pepper", "type":"text", "info":"",
-             "status":"" if config_obj.pepper is None else "checked",
-             "value": "" if config_obj.pepper is None else config_obj.pepper},
+            {"name":"pepper", "label":"Pepper", "type":"text",
+             "status":config_obj.pepper is not None,
+             "value": config_obj.pepper if config_obj.pepper is not None else None},
 
             {"name":"ratelimit", "label":"Rate-Limiting", "type":"number", "info":"failed login attempts in one minute",
-             "status":"" if config_obj.ratelimit is None else "checked",
-             "value": "" if config_obj.ratelimit is None else config_obj.ratelimit},
+             "status":config_obj.ratelimit is not None,
+             "value": config_obj.ratelimit if config_obj.ratelimit is not None else None},
 
             {"name":"userlock", "label":"User-Locking", "type":"number", "info":"failed login attempts",
-             "status":"" if config_obj.userlock is None else "checked",
-             "value": "" if config_obj.userlock is None else config_obj.userlock},
+             "status":config_obj.userlock is not None,
+             "value": config_obj.userlock if config_obj.userlock is not None else None},
 
             {"name":"captcha", "label":"CAPTCHA", "type":"number", "info":"failed login attempts",
-             "status":"" if config_obj.captcha is None else "checked",
-             "value": "" if config_obj.captcha is None else config_obj.captcha},
+             "status":config_obj.captcha is not None,
+             "value": config_obj.captcha if config_obj.captcha is not None else None},
 
-            {"name":"totp", "label":"Time-based One-Time Password", "type":"text", "info":"",
-             "status":"" if config_obj.totp is None else "checked"}
+            {"name":"totp", "label":"Time-based One-Time Password",
+             "status":config_obj.totp is not None}
         ]
     }
     return data
 
 def _get_config_hashfunc(config_json):
     for hf in config_json['hash_functions']:
-        if hf['status'] == "selected":
+        if hf['status']:
             return hf['name']
         
 def _get_config_secmodules(config_json):
     val_list = []
     for sm in config_json['security_modules']:
-        if sm['status'] == "checked":
-            val = int(sm['value']) if sm['type'] == "number" else sm['value']
+        if sm['status']:
+            if 'value' in sm:
+                val = int(sm['value']) if sm['type'] == "number" else sm['value']
+            else:
+                val = True
         else:
             val = None
         val_list.append(val)

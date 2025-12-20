@@ -3,70 +3,66 @@ import bcrypt
 import hashlib
 import secrets
 
-SHA256_SALT_BYTES = 16
-ph = PasswordHasher(
-    time_cost = 1,
-    memory_cost = 65536,
-    parallelism = 1
-)
+class ARGON2:
+    PH = PasswordHasher(
+        time_cost = 1,
+        memory_cost = 65536,
+        parallelism = 1
+    )
 
-def _gen_argon2(password):
-    hash_pwd = ph.hash(password)
-    return hash_pwd
+    def generate_hash(self, password):
+        hash_pwd = self.PH.hash(password)
+        return hash_pwd
+    
+    def check_hash(self, hash, password):
+        try:
+            self.PH.verify(hash, password)
+            return True
+        except:
+            return False
 
-def _chk_argon2(hash, password):
-    try:
-        ph.verify(hash, password)
-        return True
-    except:
-        return False
+class BCRYPT:
+    BCRYPT_ROUNDS = 12
 
-def _gen_bcrypt(password, rounds):
-    salt = bcrypt.gensalt(rounds)
-    hash_pwd = bcrypt.hashpw(password.encode('utf-8'), salt)
-    return hash_pwd.decode('utf-8')
+    def generate_hash(self, password):
+        salt = bcrypt.gensalt(self.BCRYPT_ROUNDS)
+        hash_pwd = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return hash_pwd.decode('utf-8')
+    
+    def check_hash(self, hash, password):
+        return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
 
-def _chk_bcrypt(hash, password):
-    return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
+class SHA256:
+    SHA256_SALT_BYTES = 16
 
-def _gen_sha256(password):
-    salt = secrets.token_bytes(SHA256_SALT_BYTES)
-    sha256_hash_obj = hashlib.sha256()
-    sha256_hash_obj.update(salt + password.encode('utf-8'))
-    hash_pwd = sha256_hash_obj.hexdigest()
-    return salt.hex() + hash_pwd
+    def generate_hash(self, password):
+        salt = secrets.token_bytes(self.SHA256_SALT_BYTES)
+        sha256_hash_obj = hashlib.sha256()
+        sha256_hash_obj.update(salt + password.encode('utf-8'))
+        hash_pwd = sha256_hash_obj.hexdigest()
+        return salt.hex() + hash_pwd
+    
+    def check_hash(self, hash_salt, password):
+        hash = hash_salt[self.SHA256_SALT_BYTES * 2 :]
+        salt = hash_salt[: self.SHA256_SALT_BYTES * 2]
+        sha256_hash_obj = hashlib.sha256()
+        sha256_hash_obj.update(bytes.fromhex(salt) + password.encode('utf-8'))
+        return hash == sha256_hash_obj.hexdigest()
 
-def _chk_sha256(hash, salt, password):
-    sha256_hash_obj = hashlib.sha256()
-    sha256_hash_obj.update(bytes.fromhex(salt) + password.encode('utf-8'))
-    return hash == sha256_hash_obj.hexdigest()
+class MD5:
+    def generate_hash(self, password):
+        md5_hash_obj = hashlib.md5(password.encode('utf-8'))
+        hash_pwd = md5_hash_obj.hexdigest()
+        return hash_pwd
+    
+    def check_hash(self, hash, password):
+        return  hash == self.generate_hash(password)
 
-def _gen_md5(password):
-    md5_hash_obj = hashlib.md5(password.encode('utf-8'))
-    hash_pwd = md5_hash_obj.hexdigest()
-    return hash_pwd
-
-def _chk_md5(hash, password):
-    return  hash == _gen_md5(password)
-
-def generate_hash(func, password):
-    match func:
-        case "argon2":
-            return _gen_argon2(password)
-        case "bcrypt":
-            return _gen_bcrypt(password, 12)
-        case "sha256":
-            return _gen_sha256(password)
-        case "md5":
-            return _gen_md5(password)
-        
-def check_hash(func, hash, password):
-    match func:
-        case "argon2":
-            return _chk_argon2(hash, password)
-        case "bcrypt":
-            return _chk_bcrypt(hash, password)
-        case "sha256":
-            return _chk_sha256(hash[SHA256_SALT_BYTES*2:], hash[:SHA256_SALT_BYTES*2], password)
-        case "md5":
-            return _chk_md5(hash, password)
+def HashFunctionFactory(hashfunc):
+    hash_funcs = {
+        "argon2" : ARGON2,
+        "bcrypt" : BCRYPT,
+        "sha256" : SHA256,
+        "md5" : MD5
+    }
+    return hash_funcs[hashfunc]()

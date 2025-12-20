@@ -2,15 +2,19 @@
 {% block container %}
 <form action="{{url_for('attack')}}" method="post">
     <div class="parameter">
-        <label for="">
-            <input type="radio" name="attack_type" value="test 1">
-            TEST1
+        <label for="bruteforce">
+            <input type="radio" name="attack_type" value="bruteforce" checked>
+            Brute-Force
+        </label><br>
+        <label for="dictionary">
+            <input type="radio" name="attack_type" value="dictionary">
+            Dictionary-Attack
         </label>
     </div>
-        <div class="parameter">
+    <div class="parameter">
         <label for="">
-            <input type="radio" name="attack_type" value="test 2">
-            TEST2
+            <input type="checkbox" name="pwdspraying">
+            Password-Spraying
         </label>
     </div>
     <div class="buttons">
