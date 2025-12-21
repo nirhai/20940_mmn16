@@ -4,11 +4,11 @@
         <input type="text" name="username" placeholder="Username" maxlength="25" required class="input-field">
         <input type="password" name="password" placeholder="Password" maxlength="20" required class="input-field">
 
-        <input type=
+        <input id="captcha" type=
             {% if captcha_required %} "text" {% else %} "hidden" {% endif %}
             name="captcha" placeholder="CAPTCHA Token" maxlength="20" required class="input-field">
 
-        <p class="response">{% if response is not none %} {{response}} {% endif %}</p>
+        <p id="msg" class="msg">{% if msg is not none %}{{msg}}{% endif %}</p>
         
         <div class="buttons">
             <button type="submit" formaction="{{url_for('login')}}" class="button button-login">Login</button>

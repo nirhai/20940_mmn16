@@ -1,25 +1,55 @@
 {% extends "base.html" %}
 {% block container %}
-<form action="{{url_for('attack')}}" method="post">
-    <div class="parameter">
-        <label for="bruteforce">
-            <input type="radio" name="attack_type" value="bruteforce" checked>
-            Brute-Force
-        </label><br>
-        <label for="dictionary">
-            <input type="radio" name="attack_type" value="dictionary">
-            Dictionary-Attack
-        </label>
-    </div>
-    <div class="parameter">
-        <label for="">
-            <input type="checkbox" name="pwdspraying">
-            Password-Spraying
-        </label>
-    </div>
-    <div class="buttons">
-        <input type="submit" value="Start" class="button">
-        <a href="{{url_for('index')}}" class="button">Back</a>
-    </div>
-</form>
+    <script>
+        function toggleRequired(param) {
+            var p1 = document.getElementById(param + "1");
+            var p2 = document.getElementById(param + "2");
+            var tmp = p1.required;
+            p1.required = p2.required;
+            p2.required = tmp;
+        }
+    </script>
+    <form action="{{url_for('attack')}}" method="post">
+        <div class="parameter">
+            <label for="single_user">
+                <input type="radio" name="attack_range" value="single_user" onchange="toggleRequired('range')" checked>
+                Singel user<br>
+                <div class="parameter-settings">
+                    <input type="text" name="username" id="range1" placeholder="Username" required class="input-field">
+                </div>
+            </label>
+            <label for="pwd_spraying">
+                <input type="radio" name="attack_range" value="pwd_spraying" onchange="toggleRequired('range')">
+                Password-Spraying<br>
+                <div class="parameter-settings">
+                    <input type="text" name="users_path" value="users.json" id="range2" placeholder="Path" class="input-field">
+                </div>
+
+            </label>
+        </div>
+        <div class="parameter">
+            <label for="bruteforce">
+                <input type="radio" name="attack_type" value="bruteforce" onchange="toggleRequired('type')" checked>
+                Brute-Force<br>
+                <div class="parameter-settings">
+                    <input type="checkbox" name="digit" checked>Digits<br>
+                    <input type="checkbox" name="lowercase">Lowercase letters<br>
+                    <input type="checkbox" name="uppercase">Uppercase letters<br>
+                    <input type="checkbox" name="special">Special characters<br>
+                    <input type="number" name="pwd_len" value="8" id="type1" placeholder="Maximum password length" required class="input-field">
+                </div>
+            </label>
+            <label for="dictionary">
+                <input type="radio" name="attack_type" value="dictionary" onchange="toggleRequired('type')">
+                Dictionary-Attack<br>
+                <div class="parameter-settings">
+                    <input type="text" name="wordlist_path" value="wordlist.txt" id="type2" placeholder="Path" class="input-field">
+                </div>
+            </label>
+        </div>
+        <div class="buttons">
+            <input type="submit" value="Start" class="button">
+            <a href="{{url_for('index')}}" class="button">Back</a>
+        </div>
+    </form>
 {% endblock %}

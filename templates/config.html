@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block container %}
-<script>
-    function toggleRequired(sm) {
-        var cb = document.getElementById(sm + "_cb");
-        var tb = document.getElementById(sm + "_tb");
-        tb.required = cb.checked;
-    }
-</script>
+    <script>
+        function toggleRequired(sm) {
+            var cb = document.getElementById(sm + "_cb");
+            var tb = document.getElementById(sm + "_tb");
+            tb.required = cb.checked;
+        }
+    </script>
     <form action="{{url_for('save')}}" method="post">
         <div class="parameter">
             <label for="hashfunc">

@@ -5,6 +5,7 @@ import time
 import secrets
 from database import Database
 from config import Config, save_config, load_config
+from attack import bruteforce_attack, dictionary_attack
 
 GROUP_SEED = 300225935
 CONFIG_FILE = 'config.json'
@@ -48,9 +49,9 @@ def index():
 @app.route("/register/<type>", methods=['POST'])
 def register(type):
     totp_reg = (totp_on := conf.totp is not None) and type == 'totp'
-    username = request.form['username']
-    password = request.form['password']
-    token = request.form['captcha']
+    username = request.form.get('username')
+    password = request.form.get('password')
+    token = request.form.get('captcha')
     global captcha_token
     if (captcha_on := conf.captcha is not None) and (captcha_required := not _token_is_valid(token, conf.captcha)):
         msg = "wrong token"
@@ -58,13 +59,13 @@ def register(type):
     else:
         msg = "registered" if database.insert_user(username, password, totp_reg) else "user exists"
         captcha_token = None
-    return render_template("index.html", response=msg, captcha_required=captcha_on and captcha_required, totp_on=totp_on)
+    return render_template("index.html", msg=msg, captcha_required=captcha_on and captcha_required, totp_on=totp_on)
 
 @app.route("/login", methods=['POST'])
 def login():
-    username = request.form['username']
-    password = request.form['password']
-    token = request.form['captcha']
+    username = request.form.get('username')
+    password = request.form.get('password')
+    token = request.form.get('captcha')
     attempts_per_minute, max_attempts, captcha_max_attempts = conf.ratelimit, conf.userlock, conf.captcha
     start_time_ms = int(time.time() * 1000) #for log
 
@@ -91,7 +92,7 @@ def login():
     latency_ms = end_time_ms - start_time_ms #for log
     log_data = [GROUP_SEED, username, conf.hashfunc, conf.pepper, conf.ratelimit, conf.userlock, conf.captcha, conf.totp, msg, latency_ms, end_time_ms]
     _log_to_csv(LOG_FILE, log_data)
-    return render_template("index.html", response=msg, captcha_required=captcha_on and captcha_required, totp_on=conf.totp is not None)
+    return render_template("index.html", msg=msg, captcha_required=captcha_on and captcha_required, totp_on=conf.totp is not None)
         
 @app.route("/admin/get_captcha_token")
 def get_captcha_token():
@@ -104,7 +105,7 @@ def get_captcha_token():
 def login_totp():
     return "TEST"
 
-@app.route("/config")
+@app.route("/admin/config")
 def config():
     with open(CONFIG_FILE, 'r') as file:
         form_config = json.load(file)
@@ -115,7 +116,7 @@ def save():
     hashfunc = request.form.get('hashfunc')
     sec_modules = []
     for sec_module in ['pepper', 'ratelimit', 'userlock', 'captcha', 'totp']:
-        if (val := request.form.get(sec_module)) is not None:
+        if (val := request.form.get(sec_module)) == 'on':
             if (val := request.form.get(sec_module + '_val')) is None:
                 val = True
         sec_modules.append(val)
@@ -132,7 +133,32 @@ def save():
 def attack():
     if request.method == 'GET':
         return render_template("attack.html")
-    return "TEST"
+    
+    users = []
+    attack_range = request.form.get('attack_range')
+    if attack_range == "single_user":
+        username = request.form.get('username')
+        users.append(username)
+    elif attack_range == "pwd_spraying":
+        users_path = request.form.get('users_path')
+        with open(users_path, 'r') as file:
+            users_file = json.load(file)
+        for user in users_file:
+            users.append(user['username'])
+
+    attack_type = request.form.get('attack_type')
+    if attack_type == "bruteforce":
+        digit = request.form.get('digit') == 'on'
+        lowercase = request.form.get('lowercase') == 'on'
+        uppercase = request.form.get('uppercase') == 'on'
+        special = request.form.get('special') == 'on'
+        pwd_len = int(request.form.get('pwd_len'))
+        result = bruteforce_attack(users, digit, lowercase, uppercase, special, pwd_len)
+    elif attack_type == "dictionary":
+        wordlist_path = request.form.get('wordlist_path')
+        result = dictionary_attack(users, wordlist_path)
+
+    return result
 
 if __name__ == "__main__":
     conf = load_config(CONFIG_FILE)

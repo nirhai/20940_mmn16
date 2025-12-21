@@ -1,9 +1,9 @@
 [
-    {"username":"user01", "password":"123", "pwd_strength":"", "totp":false},
-    {"username":"user02", "password":"123", "pwd_strength":"", "totp":false},
-    {"username":"user03", "password":"123", "pwd_strength":"", "totp":false},
-    {"username":"user04", "password":"123", "pwd_strength":"", "totp":false},
-    {"username":"user05", "password":"123", "pwd_strength":"", "totp":false},
+    {"username":"user01", "password":"123456", "pwd_strength":"", "totp":false},
+    {"username":"user02", "password":"123456", "pwd_strength":"", "totp":false},
+    {"username":"user03", "password":"123456", "pwd_strength":"", "totp":false},
+    {"username":"user04", "password":"123456", "pwd_strength":"", "totp":false},
+    {"username":"user05", "password":"123456", "pwd_strength":"", "totp":false},
     {"username":"user06", "password":"123", "pwd_strength":"", "totp":false},
     {"username":"user07", "password":"123", "pwd_strength":"", "totp":false},
     {"username":"user08", "password":"123", "pwd_strength":"", "totp":false},
@@ -25,8 +25,8 @@
     {"username":"user24", "password":"123", "pwd_strength":"", "totp":false},
     {"username":"user25", "password":"123", "pwd_strength":"", "totp":false},
     {"username":"user26", "password":"123", "pwd_strength":"", "totp":false},
-    {"username":"user27", "password":"123", "pwd_strength":"", "totp":false},
-    {"username":"user28", "password":"123", "pwd_strength":"", "totp":false},
-    {"username":"user29", "password":"123", "pwd_strength":"", "totp":false},
-    {"username":"user30", "password":"123", "pwd_strength":"", "totp":false}
+    {"username":"user27", "password":"123456", "pwd_strength":"", "totp":false},
+    {"username":"user28", "password":"123456", "pwd_strength":"", "totp":false},
+    {"username":"user29", "password":"123456", "pwd_strength":"", "totp":false},
+    {"username":"user30", "password":"123456", "pwd_strength":"", "totp":false}
 ]

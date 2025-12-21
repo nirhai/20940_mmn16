@@ -18,7 +18,7 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.response {
+.msg {
     height: 10px;
     align-items: center;
 }
@@ -31,6 +31,10 @@ body {
     padding-top: 5px;
     padding-bottom: 5px;
     text-align: left;
+}
+
+.parameter-settings {
+    padding: 3px 20px;
 }
 
 .input-field {
