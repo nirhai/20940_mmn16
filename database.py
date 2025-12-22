@@ -2,7 +2,7 @@ import sqlite3
 import time
 from hash_func import HashFunctionFactory
 
-SECONDS_IN_MINUTE = 60.0
+SECONDS_IN_MINUTE = 60
 
 class Database:
     def __init__(self, filename, hashfunc, pepper=None):
@@ -60,12 +60,12 @@ class Database:
                 result = None
             elif attempts_per_minute is not None:
                 curr_attempt_time = int(time.time())
-                if first_attempt_time is None or curr_attempt_time - first_attempt_time > SECONDS_IN_MINUTE:
+                if first_attempt_time is None or curr_attempt_time - first_attempt_time >= SECONDS_IN_MINUTE:
                     first_attempt_time = curr_attempt_time
                     failed_attempts_per_minute = 0
                 elif failed_attempts_per_minute >= attempts_per_minute:
-                    result = None
-            if result is not None:
+                    result = SECONDS_IN_MINUTE + first_attempt_time - curr_attempt_time
+            if result is False:
                 password_with_pepper = password + ("" if self.pepper is None else self.pepper)
                 if self.hashfunc.check_hash(user[1], password_with_pepper):
                     first_attempt_time = None
@@ -84,4 +84,3 @@ class Database:
                 connect_obj.commit()
         connect_obj.close()
         return result
-

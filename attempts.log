@@ -1,23 +1,51 @@
 group_seed,username,hash_mode,pepper,ratelimit,userlock,captcha,totp,result,latency_ms,timestamp
-300225935,1,sha256,,,,2,,wrong user or password,2,1766336571417
-300225935,1,sha256,,,,2,,wrong user or password,0,1766336574226
-300225935,123,sha256,,,,,,wrong user or password,3,1766337006769
-300225935,123,sha256,,,,,,wrong user or password,1,1766337035221
-300225935,123,sha256,,,,,,wrong user or password,0,1766337037278
-300225935,123,sha256,,,,,,wrong user or password,0,1766337039313
-300225935,123,sha256,,,,,,wrong user or password,1,1766337041371
-300225935,123,sha256,,,,,,wrong user or password,1,1766337043401
-300225935,123,sha256,,,,,,wrong user or password,1,1766337045448
-300225935,1,sha256,,,,1,,wrong user or password,3,1766338330790
-300225935,1,sha256,,,,1,,wrong user or password,0,1766338334860
-300225935,1,sha256,,,,1,,wrong token,0,1766338336899
-300225935,1,sha256,,,,1,,wrong user or password,0,1766338340960
-300225935,1,sha256,,,,1,,wrong token,0,1766338342995
-300225935,1,sha256,,,,1,,wrong user or password,1,1766338347071
-300225935,1,sha256,,,,1,,wrong token,0,1766338349105
-300225935,1,sha256,,,,1,,wrong user or password,0,1766338353163
-300225935,1,sha256,,,,1,,wrong token,0,1766338355208
-300225935,1,sha256,,,,1,,wrong user or password,1,1766338359282
-300225935,1,sha256,,,,1,,wrong token,0,1766338361321
-300225935,1,sha256,,,,1,,logged in,1,1766338365386
-300225935,1,sha256,,,,1,,wrong user or password,0,1766338391768
+300225935,1,sha256,,,,,,wrong user or password,3,1766406798413
+300225935,1,sha256,,,,,,wrong user or password,2,1766406800447
+300225935,1,sha256,,,,,,wrong user or password,1,1766406802483
+300225935,1,sha256,,,,,,logged in,1,1766406804530
+300225935,1,sha256,,,,2,,wrong user or password,3,1766408643772
+300225935,1,sha256,,,,2,,wrong user or password,1,1766408645808
+300225935,1,sha256,,,,2,,wrong user or password,0,1766408647859
+300225935,1,sha256,,,,2,,wrong user or password,1,1766408649890
+300225935,1,sha256,,,,2,,wrong user or password,1,1766408651942
+300225935,1,sha256,,,,2,,logged in,1,1766408653983
+300225935,1,sha256,,,,2,,wrong user or password,2,1766408881122
+300225935,1,sha256,,,,2,,wrong user or password,1,1766408883171
+300225935,1,sha256,,,,2,,wrong user or password,0,1766408885215
+300225935,1,sha256,,,,2,,wrong user or password,0,1766408887249
+300225935,1,sha256,,,,2,,wrong user or password,1,1766408889299
+300225935,1,sha256,,,,2,,logged in,1,1766408891347
+300225935,1,sha256,,,,2,,wrong user or password,2,1766409308353
+300225935,1,sha256,,,,2,,wrong user or password,1,1766409310378
+300225935,1,sha256,,,,2,,wrong user or password,0,1766409312408
+300225935,1,sha256,,,,2,,wrong user or password,1,1766409314458
+300225935,1,sha256,,,,2,,wrong user or password,1,1766409316483
+300225935,1,sha256,,,,2,,logged in,0,1766409318537
+300225935,1,sha256,,,,2,,logged in,1,1766409329022
+300225935,1,sha256,,,,2,,wrong user or password,0,1766409342717
+300225935,1,sha256,,,,2,,logged in,1,1766409344766
+300225935,22,sha256,,,,2,,wrong user or password,2,1766409362139
+300225935,22,sha256,,,,2,,logged in,2,1766409366845
+300225935,22,sha256,,,,2,,logged in,1,1766409371296
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409380416
+300225935,22,sha256,,,,2,,wrong user or password,0,1766409382467
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409384517
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409386573
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409388605
+300225935,22,sha256,,,,2,,wrong user or password,0,1766409390645
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409392692
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409394735
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409396766
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409398804
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409400846
+300225935,22,sha256,,,,2,,wrong user or password,2,1766409402888
+300225935,22,sha256,,,,2,,wrong user or password,2,1766409404936
+300225935,22,sha256,,,,2,,wrong user or password,0,1766409406980
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409409034
+300225935,22,sha256,,,,2,,wrong user or password,0,1766409411063
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409413109
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409415149
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409417173
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409419204
+300225935,22,sha256,,,,2,,wrong user or password,1,1766409421250
+300225935,22,sha256,,,,2,,logged in,1,1766409423295

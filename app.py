@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, session
 import json
 import csv
 import time
@@ -7,7 +7,7 @@ from database import Database
 from config import Config, save_config, load_config
 from attack import bruteforce_attack, dictionary_attack
 
-GROUP_SEED = 300225935
+GROUP_SEED = '300225935'
 CONFIG_FILE = 'config.json'
 USERS_FILE = 'users.json'
 DB_FILE = 'users.db'
@@ -29,21 +29,23 @@ def _log_to_csv(filename, data):
 def _generate_token():
     return secrets.token_urlsafe(10)
 
-def _token_is_valid(token, max_attempts):
-    global captcha_attempts_count
-    valid = True
-    if captcha_attempts_count > max_attempts - 1:
-        if valid := token == captcha_token:
-            captcha_attempts_count = 0
-    return valid
+def _token_invalid(token, max_attempts):
+    invalid = False
+    if session['captcha_attempts_count'] > max_attempts - 1:
+        if not (invalid := token != session['captcha_token']):
+            session['captcha_attempts_count'] = 0
+    return invalid
 
 app = Flask(__name__)
+app.secret_key = GROUP_SEED.encode("utf-8")
 
 # routs
 @app.route("/")
 def index():
     if captcha_on := conf.captcha is not None:
-         captcha_required = captcha_attempts_count > conf.captcha - 1
+        if 'captcha_attempts_count' not in session:
+            session['captcha_attempts_count'] = 0
+        captcha_required = session['captcha_attempts_count'] > conf.captcha - 1
     return render_template("index.html", captcha_required=captcha_on and captcha_required, totp_on=conf.totp is not None)
 
 @app.route("/register/<type>", methods=['POST'])
@@ -52,13 +54,14 @@ def register(type):
     username = request.form.get('username')
     password = request.form.get('password')
     token = request.form.get('captcha')
-    global captcha_token
-    if (captcha_on := conf.captcha is not None) and (captcha_required := not _token_is_valid(token, conf.captcha)):
+    if (captcha_on := conf.captcha is not None) and ('captcha_attempts_count' not in session):
+        session['captcha_attempts_count'] = 0
+    if captcha_on and (captcha_required := _token_invalid(token, conf.captcha)):
         msg = "wrong token"
-        captcha_token = _generate_token()
+        session['captcha_token'] = _generate_token()
     else:
         msg = "registered" if database.insert_user(username, password, totp_reg) else "user exists"
-        captcha_token = None
+        session.pop('captcha_token', None)
     return render_template("index.html", msg=msg, captcha_required=captcha_on and captcha_required, totp_on=totp_on)
 
 @app.route("/login", methods=['POST'])
@@ -69,25 +72,32 @@ def login():
     attempts_per_minute, max_attempts, captcha_max_attempts = conf.ratelimit, conf.userlock, conf.captcha
     start_time_ms = int(time.time() * 1000) #for log
 
-    captcha_on = captcha_max_attempts is not None
-    captcha_required = captcha_on and not _token_is_valid(token, captcha_max_attempts)
-    global captcha_attempts_count, captcha_token
+    if (captcha_on := captcha_max_attempts is not None) and ('captcha_attempts_count' not in session):
+        session['captcha_attempts_count'] = 0
+    captcha_required = captcha_on  and _token_invalid(token, captcha_max_attempts)
     if captcha_required:
         msg = "wrong token"
     else:
         if captcha_on:
-            captcha_attempts_count += 1
-            captcha_required = captcha_attempts_count > captcha_max_attempts - 1
-        match database.check_user(username, password, max_attempts, attempts_per_minute):
-            case None:
-                msg = "locked"
-            case False:
-                msg = "wrong user or password"
-            case True:
-                msg = "logged in"
-                captcha_attempts_count = 0
-                captcha_required = False
-    captcha_token = _generate_token() if captcha_required else None
+            session['captcha_attempts_count'] += 1
+            captcha_required = session['captcha_attempts_count'] > captcha_max_attempts - 1
+        result = database.check_user(username, password, max_attempts, attempts_per_minute)
+        if result == None:
+            msg = "locked"
+        elif type(result) == int:
+            msg = f"locked for {result} seconds"
+        elif result == False:
+            msg = "wrong user or password"
+        elif result == True:
+            msg = "logged in"
+            session['captcha_attempts_count'] = 0
+            captcha_required = False
+
+    if captcha_required:
+        session['captcha_token'] = _generate_token()
+    else:
+        session.pop('captcha_token', None)
+
     end_time_ms = int(time.time() * 1000) #for log
     latency_ms = end_time_ms - start_time_ms #for log
     log_data = [GROUP_SEED, username, conf.hashfunc, conf.pepper, conf.ratelimit, conf.userlock, conf.captcha, conf.totp, msg, latency_ms, end_time_ms]
@@ -97,8 +107,8 @@ def login():
 @app.route("/admin/get_captcha_token")
 def get_captcha_token():
     gs = request.args.get('group_seed')
-    if captcha_token is not None and gs is not None and int(gs) == GROUP_SEED:
-        return captcha_token
+    if 'captcha_token' in session and gs == GROUP_SEED:
+        return session['captcha_token']
     return "error"
 
 @app.route("/login_totp")
@@ -122,11 +132,10 @@ def save():
         sec_modules.append(val)
     config_obj = Config(hashfunc, sec_modules)
     save_config(CONFIG_FILE, config_obj)
-    global conf, database, captcha_attempts_count, captcha_token
+    global conf, database
     conf = load_config(CONFIG_FILE)
     database = _build_db(DB_FILE, USERS_FILE)
-    captcha_attempts_count = 0
-    captcha_token = None
+    session.clear()
     return redirect(url_for('index'))
 
 @app.route("/attack", methods=['GET', 'POST'])
@@ -163,6 +172,4 @@ def attack():
 if __name__ == "__main__":
     conf = load_config(CONFIG_FILE)
     database = _build_db(DB_FILE, USERS_FILE)
-    captcha_attempts_count = 0
-    captcha_token = None
     app.run(debug=True)

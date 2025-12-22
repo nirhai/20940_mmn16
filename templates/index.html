@@ -4,9 +4,9 @@
         <input type="text" name="username" placeholder="Username" maxlength="25" required class="input-field">
         <input type="password" name="password" placeholder="Password" maxlength="20" required class="input-field">
 
-        <input id="captcha" type=
-            {% if captcha_required %} "text" {% else %} "hidden" {% endif %}
-            name="captcha" placeholder="CAPTCHA Token" maxlength="20" required class="input-field">
+        {% if captcha_required %}
+        <input id="captcha" type="text" name="captcha" placeholder="CAPTCHA Token" maxlength="20" required class="input-field">
+        {% endif %}
 
         <p id="msg" class="msg">{% if msg is not none %}{{msg}}{% endif %}</p>
         
