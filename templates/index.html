@@ -1,23 +1,75 @@
 {% extends "base.html" %}
 {% block container %}
-    <form method="post">
-        <input type="text" name="username" placeholder="Username" maxlength="25" required class="input-field">
-        <input type="password" name="password" placeholder="Password" maxlength="20" required class="input-field">
-
+    <form method="post" onsubmit="return submitForm">
+        <label for="username"><input type="text" name="username" placeholder="Username" maxlength="25" required class="input-field"></label>
+        <label for="password"><input type="password" name="password" placeholder="Password" maxlength="20" required class="input-field"></label>
+        
         {% if captcha_required %}
-        <input id="captcha" type="text" name="captcha" placeholder="CAPTCHA Token" maxlength="20" required class="input-field">
+        <label for="captcha"><input id="captcha" type="text" name="captcha" placeholder="CAPTCHA Token" maxlength="20" required class="input-field"></label>
         {% endif %}
 
-        <p id="msg" class="msg">{% if msg is not none %}{{msg}}{% endif %}</p>
+        {% if totp_on %}
+        <div class="parameter"><label for="2fa">
+            <input id="2fa" type="checkbox" name="2fa" onchange="toggleFormAction()">Two-Factor Authentication
+            <input id="otp" type="text" name="otp" placeholder="OTP" maxlength="20" hidden class="input-field">
+        </label></div>
+        {% endif %}
+
+        <p id="msg" class="message">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                    {{ message }}<br>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </p>
         
         <div class="buttons">
-            <button type="submit" formaction="{{url_for('login')}}" class="button button-login">Login</button>
-            <button type="submit" formaction="{{url_for('register', type='void')}}" class="button button-register">Register</button>
-            <div {% if not totp_on %} hidden {% endif %} >
-                <button type="submit" formaction="{{url_for('register', type='totp')}}" class="button button-register">Register with TOTP</button>
-            </div>
-            <a href="{{url_for('attack')}}" class="button button-attack">Attack</a>
-            <a href="{{url_for('config')}}" class="button">Set configuration</a>
+            <button type="submit" id="login" formaction="{{ url_for('login', login_type='void') }}" onclick="check2FA()" class="button button-login">Login</button>
+            <button type="submit" id="register" formaction="{{ url_for('register', register_type='void') }}" onclick="ignoreOTP()" class="button button-register">Register</button>
+            {% if totp_on %}
+            <a href="{{ url_for('otp_gen') }}" class="button">OTP Generator</a>
+            {% endif %}
+            <a href="{{ url_for('config') }}" class="button">Set configuration</a>
+            <a href="{{ url_for('attack') }}" class="button button-attack">Attack</a>
         </div>
     </form>
+    <script>
+        var submitForm = true;
+
+        function toggleFormAction() {
+            submitForm = true;
+            let tfa = document.getElementById('2fa');
+            let login = document.getElementById('login');
+            let register = document.getElementById('register');
+            if(tfa.checked) {
+                login.formAction = "{{ url_for('login', login_type='totp') }}";
+                register.formAction = "{{ url_for('register', register_type='totp') }}";
+            } else {
+                login.formAction = "{{ url_for('login', login_type='void') }}";
+                register.formAction = "{{ url_for('register', register_type='void') }}";
+                let otp = document.getElementById('otp');
+                otp.hidden = true;
+                otp.required = false;
+            }
+        }
+
+        function check2FA() {
+            submitForm = true;
+            let tfa = document.getElementById('2fa');
+            let otp = document.getElementById('otp');
+            if(tfa.checked && otp.hidden) {
+                submitForm = false;
+                otp.hidden = false;
+                otp.required = true;
+            }
+        }
+
+        function ignoreOTP() {
+            submitForm = true;
+            let otp = document.getElementById('otp');
+            otp.required = false;
+        }
+    </script>
 {% endblock %}

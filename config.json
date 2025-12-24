@@ -50,8 +50,8 @@
             "label": "CAPTCHA",
             "type": "number",
             "info": "failed login attempts",
-            "status": true,
-            "value": "2"
+            "status": false,
+            "value": null
         },
         {
             "name": "totp",

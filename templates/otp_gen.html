@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block container %}
+    <form action="{{ url_for('otp_gen') }}", method="post">
+        <label for="secret">
+            <input type="text" name="secret" placeholder="Secret key" required class="input-field">
+        </label>
+        <p id="otp" class="message">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                    {{ message }}<br>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </p>
+        <div class="buttons">
+            <input type="submit" value="Generate" class="button">
+            <a href="{{ url_for('index') }}" class="button">Back</a>
+        </div>
+    </form>
+{% endblock %}

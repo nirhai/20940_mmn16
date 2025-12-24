@@ -9,7 +9,7 @@
             p2.required = tmp;
         }
     </script>
-    <form action="{{url_for('attack')}}" method="post">
+    <form action="{{ url_for('attack') }}" method="post">
         <div class="parameter">
             <label for="single_user">
                 <input type="radio" name="attack_range" value="single_user" onchange="toggleRequired('range')" checked>
@@ -49,7 +49,7 @@
         </div>
         <div class="buttons">
             <input type="submit" value="Start" class="button">
-            <a href="{{url_for('index')}}" class="button">Back</a>
+            <a href="{{ url_for('index') }}" class="button">Back</a>
         </div>
     </form>
 {% endblock %}

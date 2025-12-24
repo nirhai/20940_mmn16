@@ -9,6 +9,15 @@ body {
     color: #4b5058;
 }
 
+.header-link {
+    text-decoration: none;
+    color: inherit;
+    font-size: 2rem;
+    font-weight: bolder;
+    display: block;
+    padding-bottom: 20px;
+}
+
 .container {
     background-color: white;
     border-radius: 10px;
@@ -18,8 +27,9 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.msg {
+.message {
     height: 10px;
+    padding-bottom: 8px;
     align-items: center;
 }
 

@@ -1,6 +1,7 @@
 import sqlite3
 import time
 from hash_func import HashFunctionFactory
+from totp_auth import generate_secret, validate_totp
 
 SECONDS_IN_MINUTE = 60
 
@@ -29,25 +30,21 @@ class Database:
         connect_obj = sqlite3.connect(self.filename)
         cursor_obj = connect_obj.cursor()
         password_with_pepper = password + ("" if self.pepper is None else self.pepper)
-
-        
-        totp_secret = 1111111111111111 if totp else None
-
-
-        insert_query = """INSERT INTO users (username, password_hash, failed_attempts, failed_attempts_per_minute)
-                          VALUES (?, ?, 0, 0)"""
-        user_data = (username, self.hashfunc.generate_hash(password_with_pepper))
+        totp_secret = generate_secret() if totp else None
+        insert_query = """INSERT INTO users (username, password_hash, failed_attempts, failed_attempts_per_minute, totp_secret)
+                          VALUES (?, ?, 0, 0, ?)"""
+        user_data = (username, self.hashfunc.generate_hash(password_with_pepper), totp_secret)
         try:
             cursor_obj.execute(insert_query, user_data)
         except:
             return False
         else:
-            return True
+            return totp_secret if totp_secret is not None else True
         finally:
             connect_obj.commit()
             connect_obj.close()
 
-    def check_user(self, username, password, max_attempts=None, attempts_per_minute=None, totp=False):
+    def check_user(self, username, password, max_attempts=None, attempts_per_minute=None, otp=None):
         connect_obj = sqlite3.connect(self.filename)
         cursor_obj = connect_obj.cursor()
         select_query = "SELECT * FROM users WHERE username = ?"
@@ -55,7 +52,7 @@ class Database:
         user = cursor_obj.fetchone()
         result = False
         if user is not None:
-            failed_attempts, failed_attempts_per_minute, first_attempt_time, totp_secret = user[2:]
+            password_hash, failed_attempts, failed_attempts_per_minute, first_attempt_time, totp_secret = user[1:]
             if max_attempts is not None and failed_attempts >= max_attempts:
                 result = None
             elif attempts_per_minute is not None:
@@ -67,11 +64,17 @@ class Database:
                     result = SECONDS_IN_MINUTE + first_attempt_time - curr_attempt_time
             if result is False:
                 password_with_pepper = password + ("" if self.pepper is None else self.pepper)
-                if self.hashfunc.check_hash(user[1], password_with_pepper):
-                    first_attempt_time = None
-                    failed_attempts = 0
-                    failed_attempts_per_minute = 0
-                    result = True
+                if self.hashfunc.check_hash(password_hash, password_with_pepper):
+                    if otp_missing := totp_secret is not None and otp is None:
+                        result = "OTP"
+
+                    print(validate_totp(otp, totp_secret))
+
+                    if totp_secret is None or (not otp_missing and validate_totp(otp, totp_secret)):
+                        first_attempt_time = None
+                        failed_attempts = 0
+                        failed_attempts_per_minute = 0
+                        result = True
                 else:
                     failed_attempts += 1
                     failed_attempts_per_minute += 1
