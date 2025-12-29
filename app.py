@@ -1,11 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import json
 import csv
-import time
 import secrets
+from time import time
 from database import Database
 from config import Config, save_config, load_config
-from attack import bruteforce_attack, dictionary_attack
+from attack import bruteforce_attack, dictionary_attack, stop_attack
 from totp_auth import get_totp
 
 GROUP_SEED = '496905569'
@@ -49,12 +49,12 @@ def index():
         captcha_required = session['captcha_attempts_count'] > conf.captcha - 1
     return render_template("index.html", captcha_required=captcha_on and captcha_required, totp_on=conf.totp is not None)
 
-@app.route("/register_<register_type>", methods=['POST'])
-def register(register_type):
-    register_totp = (totp_on := conf.totp is not None) and register_type == 'totp'
+@app.route("/register", methods=['POST'])
+def register():
     username = request.form.get('username')
     password = request.form.get('password')
     token = request.form.get('captcha')
+    register_totp = (totp_on := conf.totp is not None) and request.form.get('2fa') is not None
     if (captcha_on := conf.captcha is not None) and ('captcha_attempts_count' not in session):
         session['captcha_attempts_count'] = 0
     if captcha_on and (captcha_required := _token_invalid(token, conf.captcha)):
@@ -71,15 +71,15 @@ def register(register_type):
         session.pop('captcha_token', None)
     return render_template("index.html", captcha_required=captcha_on and captcha_required, totp_on=totp_on)
 
-@app.route("/login_<login_type>", methods=['POST'])
-def login(login_type):
-    login_totp = (totp_on := conf.totp is not None) and login_type == 'totp'
+@app.route("/login", methods=['POST'])
+def login():
     username = request.form.get('username')
     password = request.form.get('password')
     token = request.form.get('captcha')
+    login_totp = (totp_on := conf.totp is not None) and request.form.get('2fa') is not None
     otp = request.form.get('otp') if login_totp else None
     attempts_per_minute, max_attempts, captcha_max_attempts = conf.ratelimit, conf.userlock, conf.captcha
-    start_time = int(time.time()) #for log
+    start_time = int(time()) #for log
 
     if (captcha_on := captcha_max_attempts is not None) and ('captcha_attempts_count' not in session):
         session['captcha_attempts_count'] = 0
@@ -96,7 +96,7 @@ def login(login_type):
         elif type(result) == int:
             flash(msg := f"locked for {result} seconds")
         elif type(result) == str:
-            flash(msg := "OTP required")
+            flash(msg := "wrong OTP")
         elif result == False:
             flash(msg := "wrong user or password")
         elif result == True:
@@ -109,9 +109,9 @@ def login(login_type):
     else:
         session.pop('captcha_token', None)
 
-    end_time = int(time.time()) #for log
+    end_time = int(time()) #for log
     latency_ms = (end_time - start_time) * 1000 #for log
-    log_data = [GROUP_SEED, username, conf.hashfunc, conf.pepper, conf.ratelimit, conf.userlock, conf.captcha, conf.totp, msg, latency_ms, end_time]
+    log_data = [GROUP_SEED, username, password, conf.hashfunc, conf.pepper, conf.ratelimit, conf.userlock, conf.captcha, conf.totp, msg, latency_ms, end_time]
     _log_to_csv(LOG_FILE, log_data)
     return render_template("index.html", captcha_required=captcha_on and captcha_required, totp_on=totp_on)
         
@@ -119,8 +119,10 @@ def login(login_type):
 def get_captcha_token():
     gs = request.args.get('group_seed')
     if 'captcha_token' in session and gs == GROUP_SEED:
-        return session['captcha_token']
-    return "error"
+        flash("token: " + session['captcha_token'])
+    else:
+        flash("token: not found")
+    return redirect(url_for('index'))
 
 @app.route("/admin/config")
 def config():
@@ -155,10 +157,18 @@ def otp_gen():
 
 @app.route("/attack", methods=['GET', 'POST'])
 def attack():
+    result = stop_attack()
     if request.method == 'GET':
+        action = request.args.get('action')
+        if action == 'stop':
+            return result
+        elif action == 'back':
+            return redirect(url_for('index'))
         return render_template("attack.html")
     
     users = []
+    max_attempts = int(request.form.get('max_attempts'))
+    max_duration = int(request.form.get('max_duration'))
     attack_range = request.form.get('attack_range')
     if attack_range == "single_user":
         username = request.form.get('username')
@@ -177,10 +187,10 @@ def attack():
         uppercase = request.form.get('uppercase') == 'on'
         special = request.form.get('special') == 'on'
         pwd_len = int(request.form.get('pwd_len'))
-        result = bruteforce_attack(users, digit, lowercase, uppercase, special, pwd_len)
+        result = bruteforce_attack(users, digit, lowercase, uppercase, special, pwd_len, max_attempts, max_duration)
     elif attack_type == "dictionary":
         wordlist_path = request.form.get('wordlist_path')
-        result = dictionary_attack(users, wordlist_path)
+        result = dictionary_attack(users, wordlist_path, max_attempts, max_duration)
 
     return result
 

@@ -10,7 +10,7 @@
 
         {% if totp_on %}
         <div class="parameter"><label for="2fa">
-            <input id="2fa" type="checkbox" name="2fa" onchange="toggleFormAction()">Two-Factor Authentication
+            <input id="2fa" type="checkbox" name="2fa" onchange="hideOTP()">Two-Factor Authentication
             <input id="otp" type="text" name="otp" placeholder="OTP" maxlength="20" hidden class="input-field">
         </label></div>
         {% endif %}
@@ -26,50 +26,49 @@
         </p>
         
         <div class="buttons">
-            <button type="submit" id="login" formaction="{{ url_for('login', login_type='void') }}" onclick="check2FA()" class="button button-login">Login</button>
-            <button type="submit" id="register" formaction="{{ url_for('register', register_type='void') }}" onclick="ignoreOTP()" class="button button-register">Register</button>
+            <button type="submit" formaction="{{ url_for('login') }}" {% if totp_on %} onclick="check2FA()" {% endif %} class="button button-login">Login</button>
+            <button type="submit" formaction="{{ url_for('register') }}" {% if totp_on %} onclick="ignoreOTP()" {% endif %} class="button button-register">Register</button>
             {% if totp_on %}
             <a href="{{ url_for('otp_gen') }}" class="button">OTP Generator</a>
+            {% endif %}
+            {% if captcha_required %}
+            <a href="{{ url_for('get_captcha_token', group_seed='496905569') }}" class="button">Get CAPTCHA Token</a>
             {% endif %}
             <a href="{{ url_for('config') }}" class="button">Set configuration</a>
             <a href="{{ url_for('attack') }}" class="button button-attack">Attack</a>
         </div>
     </form>
+    {% if totp_on %}
     <script>
         var submitForm = true;
 
-        function toggleFormAction() {
-            submitForm = true;
+        function hideOTP() {
             let tfa = document.getElementById('2fa');
-            let login = document.getElementById('login');
-            let register = document.getElementById('register');
-            if(tfa.checked) {
-                login.formAction = "{{ url_for('login', login_type='totp') }}";
-                register.formAction = "{{ url_for('register', register_type='totp') }}";
-            } else {
-                login.formAction = "{{ url_for('login', login_type='void') }}";
-                register.formAction = "{{ url_for('register', register_type='void') }}";
+            if(!tfa.checked) {
                 let otp = document.getElementById('otp');
                 otp.hidden = true;
                 otp.required = false;
+                submitForm = true;
             }
         }
 
         function check2FA() {
-            submitForm = true;
             let tfa = document.getElementById('2fa');
             let otp = document.getElementById('otp');
             if(tfa.checked && otp.hidden) {
-                submitForm = false;
                 otp.hidden = false;
                 otp.required = true;
+                submitForm = false;
+            } else {
+                submitForm = true;
             }
         }
 
         function ignoreOTP() {
-            submitForm = true;
             let otp = document.getElementById('otp');
             otp.required = false;
+            submitForm = true;
         }
     </script>
+    {% endif %}
 {% endblock %}

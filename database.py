@@ -65,12 +65,9 @@ class Database:
             if result is False:
                 password_with_pepper = password + ("" if self.pepper is None else self.pepper)
                 if self.hashfunc.check_hash(password_hash, password_with_pepper):
-                    if otp_missing := totp_secret is not None and otp is None:
+                    if wrong_otp := (totp_secret is not None and (otp is None or not validate_totp(otp, totp_secret))):
                         result = "OTP"
-
-                    print(validate_totp(otp, totp_secret))
-
-                    if totp_secret is None or (not otp_missing and validate_totp(otp, totp_secret)):
+                    if not wrong_otp:
                         first_attempt_time = None
                         failed_attempts = 0
                         failed_attempts_per_minute = 0

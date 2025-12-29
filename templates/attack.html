@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% block container %}
-    <script>
-        function toggleRequired(param) {
-            var p1 = document.getElementById(param + "1");
-            var p2 = document.getElementById(param + "2");
-            var tmp = p1.required;
-            p1.required = p2.required;
-            p2.required = tmp;
-        }
-    </script>
-    <form action="{{ url_for('attack') }}" method="post">
+    <form action="{{ url_for('attack') }}" method="post" onsubmit="switchButtons()">
+        <div class="parameter">
+            <label for="max_attempts">
+                Maximum attempts:
+                <input type="number" name="max_attempts" value="50000" required class="input-field">
+            </label>
+            <label for="max_duration">
+                Maximum duration (minutes):
+                <input type="number" name="max_duration" value="120" required class="input-field">
+            </label>
+        </div>
         <div class="parameter">
             <label for="single_user">
                 <input type="radio" name="attack_range" value="single_user" onchange="toggleRequired('range')" checked>
@@ -48,8 +49,24 @@
             </label>
         </div>
         <div class="buttons">
-            <input type="submit" value="Start" class="button">
-            <a href="{{ url_for('index') }}" class="button">Back</a>
+            <input type="submit" id="start" value="Start" class="button">
+            <a id="stop" href="{{ url_for('attack', action='stop') }}" style="display:none" class="button">Stop</a>
+            <a href="{{ url_for('attack', action='back') }}" class="button">Back</a>
         </div>
     </form>
+    <script>
+        function toggleRequired(param) {
+            let p1 = document.getElementById(param + "1");
+            let p2 = document.getElementById(param + "2");
+            let tmp = p1.required;
+            p1.required = p2.required;
+            p2.required = tmp;
+        }
+
+        function switchButtons() {
+            document.getElementById("start").style.display = "none";
+            document.getElementById("stop").style.display = "block";
+        }
+
+    </script>
 {% endblock %}
