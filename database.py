@@ -84,3 +84,15 @@ class Database:
                 connect_obj.commit()
         connect_obj.close()
         return result
+    
+    def unlock_user(self, username, password):
+        if check := self.check_user(username, password):
+            connect_obj = sqlite3.connect(self.filename)
+            try:
+                cursor_obj = connect_obj.cursor()
+                update_query = "UPDATE users SET failed_attempts = 0, failed_attempts_per_minute = 0, first_attempt_time = NULL WHERE username = ?"
+                cursor_obj.execute(update_query, (username,))
+                connect_obj.commit()
+            finally:
+                connect_obj.close()
+        return check

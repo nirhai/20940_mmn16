@@ -34,6 +34,9 @@
             {% if captcha_required %}
             <a href="{{ url_for('get_captcha_token', group_seed='496905569') }}" class="button">Get CAPTCHA Token</a>
             {% endif %}
+            {% if userlock_on %}
+            <button type="submit" formaction="{{ url_for('unlock') }}" {% if totp_on %} onclick="ignoreOTP()" {% endif %} class="button">Unlock User</button>
+            {% endif %}
             <a href="{{ url_for('config') }}" class="button">Set configuration</a>
             <a href="{{ url_for('attack') }}" class="button button-attack">Attack</a>
         </div>

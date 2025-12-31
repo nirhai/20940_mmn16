@@ -47,7 +47,7 @@ def index():
         if 'captcha_attempts_count' not in session:
             session['captcha_attempts_count'] = 0
         captcha_required = session['captcha_attempts_count'] > conf.captcha - 1
-    return render_template("index.html", captcha_required=captcha_on and captcha_required, totp_on=conf.totp is not None)
+    return render_template("index.html", userlock_on=conf.userlock is not None, captcha_required=captcha_on and captcha_required, totp_on=conf.totp is not None)
 
 @app.route("/register", methods=['POST'])
 def register():
@@ -69,7 +69,7 @@ def register():
             if register_totp:
                 flash(f"secret: {result}")
         session.pop('captcha_token', None)
-    return render_template("index.html", captcha_required=captcha_on and captcha_required, totp_on=totp_on)
+    return render_template("index.html", userlock_on=conf.userlock is not None, captcha_required=captcha_on and captcha_required, totp_on=totp_on)
 
 @app.route("/login", methods=['POST'])
 def login():
@@ -113,8 +113,18 @@ def login():
     latency_ms = (end_time - start_time) * 1000 #for log
     log_data = [GROUP_SEED, username, password, conf.hashfunc, conf.pepper, conf.ratelimit, conf.userlock, conf.captcha, conf.totp, msg, latency_ms, end_time]
     _log_to_csv(LOG_FILE, log_data)
-    return render_template("index.html", captcha_required=captcha_on and captcha_required, totp_on=totp_on)
-        
+    return render_template("index.html", userlock_on=conf.userlock is not None, captcha_required=captcha_on and captcha_required, totp_on=totp_on)
+
+@app.route("/admin/unlock", methods=['POST'])
+def unlock():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if database.unlock_user(username, password):
+        flash(msg := "user unlocked")
+    else:
+        flash(msg := "wrong user or password")
+    return render_template("index.html", userlock_on=conf.userlock is not None, captcha_required=False, totp_on=conf.totp is not None)
+
 @app.route("/admin/get_captcha_token")
 def get_captcha_token():
     gs = request.args.get('group_seed')

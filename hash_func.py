@@ -3,7 +3,13 @@ import bcrypt
 import hashlib
 import secrets
 
-class ARGON2:
+class HashFunction:
+    def generate_hash():
+        pass
+    def check_hash():
+        pass
+
+class ARGON2(HashFunction):
     PH = PasswordHasher(
         time_cost = 1,
         memory_cost = 65536,
@@ -21,7 +27,7 @@ class ARGON2:
         except:
             return False
 
-class BCRYPT:
+class BCRYPT(HashFunction):
     BCRYPT_ROUNDS = 12
 
     def generate_hash(self, password):
@@ -32,7 +38,7 @@ class BCRYPT:
     def check_hash(self, hash, password):
         return bcrypt.checkpw(password.encode('utf-8'), hash.encode('utf-8'))
 
-class SHA256:
+class SHA256(HashFunction):
     SHA256_SALT_BYTES = 16
 
     def generate_hash(self, password):
@@ -49,7 +55,7 @@ class SHA256:
         sha256_hash_obj.update(bytes.fromhex(salt) + password.encode('utf-8'))
         return hash == sha256_hash_obj.hexdigest()
 
-class MD5:
+class MD5(HashFunction):
     def generate_hash(self, password):
         md5_hash_obj = hashlib.md5(password.encode('utf-8'))
         hash_pwd = md5_hash_obj.hexdigest()
