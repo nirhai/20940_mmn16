@@ -46,6 +46,8 @@ def index():
     if captcha_on := conf.captcha is not None:
         if 'captcha_attempts_count' not in session:
             session['captcha_attempts_count'] = 0
+            if conf.captcha == 0:
+                session['captcha_token'] = _generate_token()
         captcha_required = session['captcha_attempts_count'] > conf.captcha - 1
     return render_template("index.html", userlock_on=conf.userlock is not None, captcha_required=captcha_on and captcha_required, totp_on=conf.totp is not None)
 
@@ -57,6 +59,8 @@ def register():
     register_totp = (totp_on := conf.totp is not None) and request.form.get('2fa') is not None
     if (captcha_on := conf.captcha is not None) and ('captcha_attempts_count' not in session):
         session['captcha_attempts_count'] = 0
+        if conf.captcha == 0:
+            session['captcha_token'] = _generate_token()
     if captcha_on and (captcha_required := _token_invalid(token, conf.captcha)):
         flash("wrong token")
         session['captcha_token'] = _generate_token()
@@ -68,8 +72,11 @@ def register():
             flash("registered")
             if register_totp:
                 flash(f"secret: {result}")
-        session.pop('captcha_token', None)
-    return render_template("index.html", userlock_on=conf.userlock is not None, captcha_required=captcha_on and captcha_required, totp_on=totp_on)
+        if conf.captcha == 0:
+            session['captcha_token'] = _generate_token()
+        else:
+            session.pop('captcha_token', None)
+    return render_template("index.html", userlock_on=conf.userlock is not None, captcha_required=captcha_on and (captcha_required or conf.captcha == 0), totp_on=totp_on)
 
 @app.route("/login", methods=['POST'])
 def login():
@@ -83,6 +90,8 @@ def login():
 
     if (captcha_on := captcha_max_attempts is not None) and ('captcha_attempts_count' not in session):
         session['captcha_attempts_count'] = 0
+        if captcha_max_attempts == 0:
+            session['captcha_token'] = _generate_token()
     captcha_required = captcha_on  and _token_invalid(token, captcha_max_attempts)
     if captcha_required:
         flash(msg := "wrong token")
@@ -102,7 +111,7 @@ def login():
         elif result == True:
             flash(msg := "logged in")
             session['captcha_attempts_count'] = 0
-            captcha_required = False
+            captcha_required = session['captcha_attempts_count'] > captcha_max_attempts - 1
 
     if captcha_required:
         session['captcha_token'] = _generate_token()

