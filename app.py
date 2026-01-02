@@ -22,10 +22,16 @@ def _build_db(db_filename, users_filename):
         db.insert_user(user['username'], user['password'], user['totp'])
     return db
 
+def _init_csv(filename):
+    data = ['group_seed','username','password','hash_mode','pepper','ratelimit','userlock','captcha','totp','result','latency_ms','timestamp']
+    with open(filename, 'w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+        writer.writerow(data)
+
 def _log_to_csv(filename, data):
     with open(filename, 'a', newline='', encoding='utf-8') as file:
-        log = csv.writer(file)
-        log.writerow(data)
+        writer = csv.writer(file)
+        writer.writerow(data)
 
 def _generate_token():
     return secrets.token_urlsafe(10)
@@ -110,8 +116,9 @@ def login():
             flash(msg := "wrong user or password")
         elif result == True:
             flash(msg := "logged in")
-            session['captcha_attempts_count'] = 0
-            captcha_required = session['captcha_attempts_count'] > captcha_max_attempts - 1
+            if captcha_on:
+                session['captcha_attempts_count'] = 0
+                captcha_required = session['captcha_attempts_count'] > captcha_max_attempts - 1
 
     if captcha_required:
         session['captcha_token'] = _generate_token()
@@ -216,4 +223,5 @@ def attack():
 if __name__ == "__main__":
     conf = load_config(CONFIG_FILE)
     database = _build_db(DB_FILE, USERS_FILE)
-    app.run(debug=True)
+    _init_csv(LOG_FILE)
+    app.run(debug=False)
