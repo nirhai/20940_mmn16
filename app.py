@@ -11,11 +11,11 @@ from totp_auth import get_totp
 GROUP_SEED = '496905569'
 CONFIG_FILE = 'config.json'
 USERS_FILE = 'users.json'
-DB_FILE = 'users.db'
+DB_FILE = 'auth.db'
 LOG_FILE = 'attempts.log'
 
 def _build_db(db_filename, users_filename):
-    db = Database(db_filename, conf.hashfunc, conf.pepper if conf.pepper else None)
+    db = Database(db_filename, conf)
     with open(users_filename, 'r') as file:
         users = json.load(file)
     for user in users:
@@ -71,13 +71,8 @@ def register():
         flash("wrong token")
         session['captcha_token'] = _generate_token()
     else:
-        result = database.insert_user(username, password, register_totp)
-        if result == False:
-            flash("user exists")
-        else:
-            flash("registered")
-            if register_totp:
-                flash(f"secret: {result}")
+        msgs = database.insert_user(username, password, register_totp)
+        for msg in msgs: flash(msg)
         if conf.captcha == 0:
             session['captcha_token'] = _generate_token()
         else:
@@ -91,7 +86,7 @@ def login():
     token = request.form.get('captcha')
     login_totp = (totp_on := conf.totp is not None) and request.form.get('2fa') is not None
     otp = request.form.get('otp') if login_totp else None
-    attempts_per_minute, max_attempts, captcha_max_attempts = conf.ratelimit, conf.userlock, conf.captcha
+    captcha_max_attempts = conf.captcha
     start_time = int(time()) #for log
 
     if (captcha_on := captcha_max_attempts is not None) and ('captcha_attempts_count' not in session):
@@ -105,21 +100,11 @@ def login():
         if captcha_on:
             session['captcha_attempts_count'] += 1
             captcha_required = session['captcha_attempts_count'] > captcha_max_attempts - 1
-        result = database.check_user(username, password, max_attempts, attempts_per_minute, otp)
-        if result == None:
-            flash(msg := "locked")
-        elif type(result) == int:
-            flash(msg := f"locked for {result} seconds")
-        elif type(result) == str:
-            flash(msg := "wrong OTP")
-        elif result == False:
-            flash(msg := "wrong user or password")
-        elif result == True:
-            flash(msg := "logged in")
-            if captcha_on:
-                session['captcha_attempts_count'] = 0
-                captcha_required = session['captcha_attempts_count'] > captcha_max_attempts - 1
-
+        msg = database.check_user(username, password, otp)
+        if msg == "logged in" and captcha_on:
+            session['captcha_attempts_count'] = 0
+            captcha_required = session['captcha_attempts_count'] > captcha_max_attempts - 1
+        flash(msg)
     if captcha_required:
         session['captcha_token'] = _generate_token()
     else:
@@ -135,10 +120,8 @@ def login():
 def unlock():
     username = request.form.get('username')
     password = request.form.get('password')
-    if database.unlock_user(username, password):
-        flash(msg := "user unlocked")
-    else:
-        flash(msg := "wrong user or password")
+    msg = database.unlock_user(username, password)
+    flash(msg)
     return render_template("index.html", userlock_on=conf.userlock is not None, captcha_required=False, totp_on=conf.totp is not None)
 
 @app.route("/admin/get_captcha_token")
@@ -165,7 +148,7 @@ def save():
             if (val := request.form.get(sec_module + '_val')) is None:
                 val = True
         sec_modules.append(val)
-    config_obj = Config(hashfunc, sec_modules)
+    config_obj = Config(hashfunc, *sec_modules)
     save_config(CONFIG_FILE, config_obj)
     global conf, database
     conf = load_config(CONFIG_FILE)
@@ -224,4 +207,4 @@ if __name__ == "__main__":
     conf = load_config(CONFIG_FILE)
     database = _build_db(DB_FILE, USERS_FILE)
     _init_csv(LOG_FILE)
-    app.run(debug=False)
+    app.run(debug=True)

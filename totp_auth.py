@@ -2,7 +2,7 @@ import pyotp
 import ntplib
 
 OTP_LENGTH = 6
-OTP_INTERVAL = 60
+OTP_INTERVAL = 30
 
 def _get_network_time(server='pool.ntp.org'):
     client = ntplib.NTPClient()

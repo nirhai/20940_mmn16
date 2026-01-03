@@ -13,12 +13,12 @@
         {
             "name": "sha256",
             "label": "SHA256/salt",
-            "status": false
+            "status": true
         },
         {
             "name": "md5",
             "label": "MD5",
-            "status": true
+            "status": false
         }
     ],
     "security_modules": [
@@ -42,8 +42,8 @@
             "label": "User-Locking",
             "type": "number",
             "info": "failed login attempts",
-            "status": true,
-            "value": "50"
+            "status": false,
+            "value": null
         },
         {
             "name": "captcha",

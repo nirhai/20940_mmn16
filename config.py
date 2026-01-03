@@ -1,13 +1,13 @@
 import json
 
 class Config:
-    def __init__(self, hashfunc, sec_modules):
+    def __init__(self, hashfunc, pepper, ratelimit, userlock, captcha, totp):
         self.hashfunc = hashfunc
-        self.pepper = sec_modules[0]
-        self.ratelimit = sec_modules[1]
-        self.userlock = sec_modules[2]
-        self.captcha = sec_modules[3]
-        self.totp = sec_modules[4]
+        self.pepper = pepper
+        self.ratelimit = ratelimit
+        self.userlock = userlock
+        self.captcha = captcha
+        self.totp = totp
 
 def _gen_config_data(config_obj):
     data = {
@@ -46,7 +46,7 @@ def _get_config_hashfunc(config_json):
             return hf['name']
         
 def _get_config_secmodules(config_json):
-    val_list = []
+    sec_modules = {}
     for sm in config_json['security_modules']:
         if sm['status']:
             if 'value' in sm:
@@ -55,8 +55,8 @@ def _get_config_secmodules(config_json):
                 val = True
         else:
             val = None
-        val_list.append(val)
-    return val_list
+        sec_modules[sm['name']] = val
+    return sec_modules
         
 def save_config(filename, config_obj):
     config_data = _gen_config_data(config_obj)
@@ -68,4 +68,4 @@ def load_config(filename):
         config_json = json.load(file)
     hashfunc = _get_config_hashfunc(config_json)
     sec_modules = _get_config_secmodules(config_json)
-    return Config(hashfunc, sec_modules)
+    return Config(hashfunc, **sec_modules)
