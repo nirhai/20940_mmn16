@@ -207,4 +207,4 @@ if __name__ == "__main__":
     conf = load_config(CONFIG_FILE)
     database = _build_db(DB_FILE, USERS_FILE)
     _init_csv(LOG_FILE)
-    app.run(debug=True)
+    app.run(debug=False)
