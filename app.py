@@ -87,7 +87,7 @@ def login():
     login_totp = (totp_on := conf.totp is not None) and request.form.get('2fa') is not None
     otp = request.form.get('otp') if login_totp else None
     captcha_max_attempts = conf.captcha
-    start_time = int(time()) #for log
+    start_time = time() #for log
 
     if (captcha_on := captcha_max_attempts is not None) and ('captcha_attempts_count' not in session):
         session['captcha_attempts_count'] = 0
@@ -110,9 +110,9 @@ def login():
     else:
         session.pop('captcha_token', None)
 
-    end_time = int(time()) #for log
-    latency_ms = (end_time - start_time) * 1000 #for log
-    log_data = [GROUP_SEED, username, password, conf.hashfunc, conf.pepper, conf.ratelimit, conf.userlock, conf.captcha, conf.totp, msg, latency_ms, end_time]
+    end_time = time() #for log
+    latency_ms = int((end_time - start_time) * 1000) #for log
+    log_data = [GROUP_SEED, username, password, conf.hashfunc, conf.pepper, conf.ratelimit, conf.userlock, conf.captcha, conf.totp, msg, latency_ms, int(end_time)]
     _log_to_csv(LOG_FILE, log_data)
     return render_template("index.html", userlock_on=conf.userlock is not None, captcha_required=captcha_on and captcha_required, totp_on=totp_on)
 
@@ -207,4 +207,4 @@ if __name__ == "__main__":
     conf = load_config(CONFIG_FILE)
     database = _build_db(DB_FILE, USERS_FILE)
     _init_csv(LOG_FILE)
-    app.run(debug=False)
+    app.run(debug=True)

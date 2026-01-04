@@ -3,7 +3,7 @@
         {
             "name": "argon2",
             "label": "argon2",
-            "status": true
+            "status": false
         },
         {
             "name": "bcrypt",
@@ -13,7 +13,7 @@
         {
             "name": "sha256",
             "label": "SHA256/salt",
-            "status": false
+            "status": true
         },
         {
             "name": "md5",
